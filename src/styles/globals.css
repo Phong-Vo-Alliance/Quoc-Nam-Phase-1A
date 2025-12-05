@@ -1,0 +1,71 @@
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --primary: 142 52% 45%; /* #38AE3C */
+  --primary-foreground: 0 0% 100%;
+  --border: 142 52% 45%;
+  --ring: 142 52% 45%;
+  --accent: 142 52% 45%;
+  --accent-foreground: 0 0% 100%;
+}
+
+.dark {
+  --primary: 142 52% 45%;
+  --primary-foreground: 0 0% 100%;
+  --border: 142 52% 45%;
+  --ring: 142 52% 45%;
+}
+
+.btn-primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+button:hover {
+  border-color: hsl(var(--primary));
+}
+
+@keyframes fadeHighlight {
+  0% {
+    background-color: rgb(230 247 231 / 1); /* brand-50 */
+  }
+  100% {
+    background-color: rgb(255 255 255 / 1); /* white */
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.fade-highlight {
+  animation: fadeHighlight 1s ease-out;
+}
+
+.fade-out {
+  animation: fadeOut 0.4s ease-in forwards;
+}
+
+@keyframes fadeBorder {
+  0% {
+    border-color: #38AE3C;
+    box-shadow: 0 0 6px rgba(56, 174, 60, 0.6);
+  }
+  100% {
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Hiệu ứng khi user nhảy đến tin nhắn được pin */
+.pinned-highlight {
+  border: 2px solid #38AE3C !important;
+  border-radius: 8px;
+  animation: fadeBorder 2s ease forwards;
+}
