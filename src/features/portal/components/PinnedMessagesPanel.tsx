@@ -59,7 +59,7 @@ export const PinnedMessagesPanel: React.FC<Props> = ({
 
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2">
-        <div className="font-medium">Tin đánh dấu</div>
+        <div className="font-medium">Tin Đánh Dấu</div>
       </div>
 
       {/* Body */}
