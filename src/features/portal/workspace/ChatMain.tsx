@@ -93,20 +93,24 @@ export const ChatMain: React.FC<{
   // const [showCloseMenu, setShowCloseMenu] = React.useState(false);
   // const [inputValue, setInputValue] = React.useState("");
   // const [pinnedMessages, setPinnedMessages] = React.useState<PinnedMessage[]>([]);
-  const [showCloseMenu, setShowCloseMenu] = React.useState(false);
+    const [showCloseMenu, setShowCloseMenu] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
-  const [pinnedMessages, setPinnedMessages] = React.useState<PinnedMessage[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const currentChatId = "chat-01";
+  const handlePinToggle = useCallback(
+    (msg: Message) => {
+      // 1) Báo lên trên để cập nhật danh sách pinned (PortalWireframes / WorkspaceView)
+      onTogglePin(msg);
 
-  const handlePinToggle = useCallback((msg: Message) => {
-    setPinnedMessages((prev) =>
-      prev.some((m) => m.id === msg.id)
-        ? prev.filter((m) => m.id !== msg.id)
-        : [...prev, convertToPinnedMessage(msg, currentChatId, title)]
-    );
-  }, [currentChatId, title]);
+      // 2) Đồng thời toggle isPinned trên chính message để icon Star/StarOff hiển thị đúng
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msg.id ? { ...m, isPinned: !m.isPinned } : m
+        )
+      );
+    },
+    [onTogglePin, setMessages]
+  );
 
   // const handleOpenFile = (msg: Message) => openPreview(msg.fileInfo!);
   // const handleOpenImage = (msg: Message) => openPreview(msg.fileInfo!);

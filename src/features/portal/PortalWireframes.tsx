@@ -264,33 +264,50 @@ export default function PortalWireframes() {
 
 
   // -- Pinned messages (mock) ---  
+  const [showPinnedToast, setShowPinnedToast] = useState(false);
+
+  const onShowPinnedToast = () => {
+    setShowPinnedToast(true);
+    setTimeout(() => setShowPinnedToast(false), 2000);
+  };
+
   const [pinnedMessages, setPinnedMessages] = React.useState<PinnedMessage[]>([
     {
-      id: "pin_001",
-      chatId: "grp_vh_kho",         // đúng với type của bạn
-      sender: "Thanh Trúc",
-      type: "text",
-      preview: "Phiếu nhập hàng đợt 2 đã cập nhật…",
-      content: "…",                 // nếu có
-      time: new Date().toISOString(),
+      // dùng luôn id của message gốc trong mockMessages.ts
+      id: "msg_0008",
+      chatId: "grp_vh_kho",
       groupName: "Vận hành – Kho Hàng",
-      // replyTo có thể trỏ về message gốc; tuỳ types.Message["replyTo"] của bạn
-      replyTo: { id: "msg_0008" } as any,
-      files: [{ name: "bien_ban_nhap.pdf", type: "pdf", url: "#" }],
+      workTypeName: "Nhận hàng",
+      sender: "Thu An",
+      type: "text",
+      content: "Đã nhận đủ hàng PO-2025-002, không chênh lệch.",
+      preview: "Đã nhận đủ hàng PO-2025-002, không chênh lệch.",
+      time: new Date().toISOString(),
     },
     {
-      id: "pin_002",
+      id: "msg_0012",
       chatId: "grp_vh_kho",
-      sender: "Thu An",
-      type: "image",
-      preview: "[hình ảnh] kiện hàng số 12",
-      time: new Date().toISOString(),
       groupName: "Vận hành – Kho Hàng",
-      replyTo: { id: "msg_0012" } as any,
+      workTypeName: "Nhận hàng",
+      sender: "Diễm Chi",
+      type: "image",
+      preview: "[Hình ảnh] kiện hàng số 12",
+      time: new Date().toISOString(),
+      fileInfo: {
+        name: "kien_hang_12.jpg",
+        type: "image",
+        url: "/mock/img/kien_hang_12.jpg",
+      },
     },
   ]);
+  // Xử lý mở tin nhắn đã ghim
+
 
   const [scrollToMessageId, setScrollToMessageId] = React.useState<string | undefined>(undefined);
+
+  const handleUnpinMessage = (id: string) => {
+    setPinnedMessages((prev) => prev.filter((m) => m.id !== id));
+  };
 
   const handleOpenPinnedMessage = (pin: PinnedMessage) => {
     // 1) mở đúng hội thoại (group/private) theo chatId
@@ -301,10 +318,10 @@ export default function PortalWireframes() {
 
     // 3) xác định messageId để ChatMain cuộn tới
     // tuỳ cấu trúc replyTo của bạn; dùng fallback an toàn:
-    const targetId =
-      (pin.replyTo as any)?.id ||
-      (pin.replyTo as any)?.messageId ||
-      undefined;
+    const targetId = pin.id;
+    //   (pin.replyTo as any)?.id ||
+    //   (pin.replyTo as any)?.messageId ||
+    //   undefined;
     if (targetId) setScrollToMessageId(targetId);
   };
 
@@ -971,6 +988,8 @@ const handleOpenSourceMessage = React.useCallback(
              pendingUntil: "2025-11-14T17:00:00Z",
            },
          ]}
+
+         showPinnedToast={showPinnedToast}
       />
 
       {/* Nội dung chính */}
@@ -1015,6 +1034,10 @@ const handleOpenSourceMessage = React.useCallback(
             viewMode={viewMode}
             pinnedMessages={pinnedMessages}
             onClosePinned={() => setWorkspaceMode("default")}
+            setPinnedMessages={setPinnedMessages}
+            onUnpinMessage={handleUnpinMessage}
+            onOpenPinnedMessage={handleOpenPinnedMessage}
+            onShowPinnedToast={onShowPinnedToast}
 
             workTypes={(selectedGroup?.workTypes ?? []).map(w => ({ id: w.id, name: w.name }))}
             selectedWorkTypeId={selectedWorkTypeId}

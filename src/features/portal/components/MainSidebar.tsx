@@ -39,6 +39,7 @@ interface MainSidebarProps {
     workTypeName?: string;
     pendingUntil?: string;
   }[];
+  showPinnedToast: boolean;
 }
 
 export const MainSidebar: React.FC<MainSidebarProps> = ({
@@ -47,6 +48,7 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
   workspaceMode,
   viewMode,
   pendingTasks: initialPending = [],
+  showPinnedToast,  
 }) => {
   const [openTools, setOpenTools] = React.useState(false);
   const [openQuickMsg, setOpenQuickMsg] = React.useState(false);  
@@ -56,6 +58,8 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
   const [openDateModal, setOpenDateModal] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<string | null>(null);
   const [newDate, setNewDate] = React.useState<Date | undefined>(undefined);
+
+  //const [showPinnedToast, setShowPinnedToast] = React.useState(false);
 
   // TODO: Bật lại khi qua phase kế tiếp
   const isShowPhasedFeatures = false;
@@ -316,6 +320,22 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
             </div>
           </PopoverContent>
         </Popover>
+
+        {/* Toast thông báo đã đánh dấu */}
+        {showPinnedToast && (
+          <div className="absolute left-16 bottom-24 z-[9999] animate-fade-in">
+            <div className="relative bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1 rounded-md shadow">
+              <span className="text-sm font-medium">⭐ Đã đánh dấu</span>
+
+              {/* Mũi tên chỉ vào icon Công cụ */}
+              <div className="absolute -left-2 top-1/2 -translate-y-1/2 
+                      w-0 h-0 border-t-8 border-b-8 border-r-8 
+                      border-t-transparent border-b-transparent border-r-amber-200">
+              </div>
+            </div>
+          </div>
+        )}
+
 
         <button
           title="Đăng xuất"
