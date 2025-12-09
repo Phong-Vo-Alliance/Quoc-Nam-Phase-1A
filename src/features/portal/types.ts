@@ -260,18 +260,22 @@ export interface GroupChat {
 // }
 
 export interface PinnedMessage {
-  id: string;
-  chatId: string;       // ID hoặc tên hội thoại
-  sender: string;
-  content?: string;     // nội dung chính
-  time: string;
-  groupName?: string;
-  type: "text" | "image" | "file" | "reply" | "system";
-  preview?: string;     // rút gọn nội dung để list ngắn gọn
-  replyTo?: Message["replyTo"];
-  files?: FileAttachment[];
-  fileInfo?: FileAttachment;
+  id: string;                     // id của pinned entry
+  chatId: string;                 // group id nơi message xuất hiện
+  groupName: string;              // tên nhóm chat
+  workTypeName?: string;          // tên loại việc (nếu có)
+
+  sender: string;                 // tên người gửi
+  type: "text" | "image" | "file";
+
+  content?: string;               // nội dung text (nếu là text)
+  preview?: string;               // preview rút gọn để hiển thị list
+
+  fileInfo?: FileAttachment;      // thumbnail hoặc file info (image/pdf/etc)
+
+  time: string;                   // thời gian gửi tin nhắn (ISO), dùng để group
 }
+
 
 // ===== Preferences (per user per group) =====
 export interface GroupUserPreference {

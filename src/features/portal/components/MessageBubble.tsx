@@ -377,12 +377,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {!data.isMine && isFirstInGroup && (
           <div className="flex items-baseline gap-2 mb-0.5 pl-0.5">
             <span className="text-[13px] font-medium text-gray-800">{data.sender}</span>
-            <span className="text-[11px] text-gray-500">{new Date(data.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+            <span className="text-[11px] text-gray-500">{data.time}</span>
           </div>
         )}
         {data.isMine && isFirstInGroup && (
           <div className="flex justify-end mb-0.5 pr-1">
-            <span className="text-[11px] text-gray-500">{new Date(data.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+            <span className="text-[11px] text-gray-500">{data.time}</span>
           </div>
         )}
 
@@ -407,14 +407,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Time ở góc khi hover (giống Google Chat) */}
-        <div
+        {/* <div
           className={cn(
             "pointer-events-none absolute -bottom-4 text-[11px] text-gray-400 opacity-0 transition-opacity",
             data.isMine ? "right-1 group-hover:opacity-100" : "left-1 group-hover:opacity-100"
           )}
         >
-          {new Date(data.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </div>
+          {data.time}
+        </div> */}
 
         {isReceived && (          
           <span className="inline-flex items-center gap-1 mt-1 text-xs text-emerald-600">

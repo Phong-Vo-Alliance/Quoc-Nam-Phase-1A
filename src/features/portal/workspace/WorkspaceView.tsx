@@ -113,6 +113,9 @@ interface WorkspaceViewProps {
   pinnedMessages?: PinnedMessage[];
   onClosePinned?: () => void;
   onOpenPinnedMessage?: (pin: PinnedMessage) => void;
+  setPinnedMessages: React.Dispatch<React.SetStateAction<PinnedMessage[]>>;  
+  onUnpinMessage: (id: string) => void;
+  onShowPinnedToast: () => void;
 
   viewMode: "lead" | "staff";
 
@@ -178,6 +181,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     pinnedMessages,
     onClosePinned,
     onOpenPinnedMessage,
+    setPinnedMessages,
+    onUnpinMessage,
+    onShowPinnedToast,
+
     onReceiveInfo,
     receivedInfos,
     onTransferInfo,
@@ -199,6 +206,27 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
       ? contacts.find((c) => c.id === selectedChat.id)?.name ?? "Trò chuyện"
       : "Trò chuyện";
 
+  const resolvePinnedTime = (msg: Message) => {
+    // Nếu message có createdAt chuẩn → dùng luôn
+    if (msg.createdAt && !isNaN(Date.parse(msg.createdAt))) {
+      return msg.createdAt;
+    }
+
+    // Nếu msg.time đang là "HH:mm"
+    if (typeof msg.time === "string" && /^\d{2}:\d{2}$/.test(msg.time)) {
+      const [hh, mm] = msg.time.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hh);
+      date.setMinutes(mm);
+      date.setSeconds(0);
+      date.setMilliseconds(0);
+      return date.toISOString();
+    }
+
+    // fallback
+    return new Date().toISOString();
+  };
+
   return (
     <div
       className={`grid h-full min-h-0 gap-3 p-3 transition-all duration-300 ${showRight
@@ -214,8 +242,11 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           <PinnedMessagesPanel
             messages={pinnedMessages ?? []}
             onClose={onClosePinned || (() => props.setWorkspaceMode("default"))}
-            onOpenChat={(pin) => onOpenPinnedMessage?.(pin)}
-            onUnpin={(id) => {/* TODO: remove from pinned store nếu cần */ }}
+            onOpenChat={(pin) => {
+              onSelectChat({ type: "group", id: pin.chatId });
+              onOpenSourceMessage?.(pin.id);
+            }}
+            onUnpin={onUnpinMessage}
             onPreview={(file) => openPreview?.(file as any)}
           />
         ) : (
@@ -251,7 +282,47 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           searchInputRef={searchInputRef}
           onOpenCloseModalFor={() => { }}
           openPreview={openPreview}
-          onTogglePin={() => { }}
+          onTogglePin={(msg) => {
+            setPinnedMessages(prev => {
+              const exists = prev.some(p => p.id === msg.id);
+
+              // Nếu đã tồn tại → unpin
+              if (exists) {
+                return prev.filter(p => p.id !== msg.id);
+              }
+
+              // Nếu chưa có → thêm mới + SHOW TOAST
+              onShowPinnedToast();
+
+              const isImage =
+                msg.fileInfo?.type === "image" || msg.files?.[0]?.type === "image";
+
+              const pinnedType: "text" | "image" | "file" =
+                isImage
+                  ? "image"
+                  : (msg.fileInfo?.type || msg.files?.[0]?.type)
+                    ? "file"
+                    : "text";
+
+              return [
+                ...prev,
+                {
+                  id: msg.id,
+                  chatId: msg.groupId,
+                  groupName: selectedGroup?.name ?? "",
+                  workTypeName:
+                    selectedGroup?.workTypes?.find(w => w.id === selectedWorkTypeId)?.name ?? "",
+                  sender: msg.sender,
+                  type: pinnedType,
+                  content: msg.type === "text" ? msg.content : undefined,
+                  preview: msg.type === "text" ? msg.content?.slice(0, 100) : "[Đính kèm]",
+                  fileInfo: msg.fileInfo ?? msg.files?.[0] ?? undefined,
+                  time: resolvePinnedTime(msg),
+                },
+              ];
+            });
+          }}
+
 
           // NEW:
           //currentUserId={"u_diem_chi"}  // hoặc lấy từ context đăng nhập
