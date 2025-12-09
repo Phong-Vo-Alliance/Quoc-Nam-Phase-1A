@@ -4,7 +4,7 @@ import {
   FileText,
   FileSpreadsheet,
   FileType2,
-  MessageCircle,
+  MessageCircle,  
 } from "lucide-react";
 import {
   Dialog,
@@ -14,6 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { mockMessagesByWorkType } from "@/data/mockMessages";
 import { IconButton } from "@/components/ui/icon-button";
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator"
+import { Calendar } from "@/components/ui/calendar";
 
 /**
  * Loại file Phase 1A – gom đơn giản thành 3 nhóm:
@@ -41,6 +50,7 @@ type AttachmentType = "pdf" | "excel" | "word" | "image" | "other";
 type MessageLike = {
   id: string;
   groupId?: string;
+  sender?: string;
   type: "text" | "image" | "file" | "system";
   createdAt?: string;
   time?: string;
@@ -172,6 +182,19 @@ export const FileManagerPhase1A: React.FC<FileManagerPhase1AProps> = ({
   const label = mode === "media" ? "Ảnh / Video" : "Tài liệu";
 
   const [allTab, setAllTab] = React.useState<FileManagerPhase1AMode>("media");
+
+  /** FILTERS **/
+  const [senderFilter, setSenderFilter] = React.useState<string>("all");
+  const [datePreset, setDatePreset] = React.useState<string>("all");
+  const [dateRange, setDateRange] = React.useState<{ from?: string; to?: string }>({});
+
+  /** Unique senders */
+  const senders = React.useMemo(() => {
+    const s = messageList
+      .map((m: any) => m.sender)
+      .filter(Boolean);
+    return Array.from(new Set(s));
+  }, [messageList]);
 
 
   const handleOpenPreview = (f: Phase1AFileItem) => {
@@ -314,7 +337,18 @@ export const FileManagerPhase1A: React.FC<FileManagerPhase1AProps> = ({
       )}
 
       {/* Dialog Xem tất cả – 2 tab Ảnh/Video & Tài liệu, group theo ngày */}
-      <Dialog open={showAll} onOpenChange={setShowAll}>
+      <Dialog
+        open={showAll}
+        onOpenChange={(v) => {
+          setShowAll(v);
+          if (!v) {
+            setSenderFilter("all");
+            setDatePreset("all");
+            setDateRange({});
+          }
+        }}
+      >
+
         <DialogContent
           className="max-w-5xl"
           onContextMenu={(e) => e.preventDefault()}
@@ -322,6 +356,139 @@ export const FileManagerPhase1A: React.FC<FileManagerPhase1AProps> = ({
           <DialogHeader>
             <DialogTitle>Tất cả file trong nhóm chat</DialogTitle>
           </DialogHeader>
+
+          {/* FILTER BAR */}
+          {/* FILTER BAR shadcn/ui */}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+
+            {/* Người gửi */}
+            <div>
+              <Select value={senderFilter} onValueChange={setSenderFilter}>
+                <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectValue placeholder="Người gửi" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  {senders.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Ngày gửi */}
+            <div>
+              <Select
+                value={datePreset}
+                onValueChange={(v) => {
+                  setDatePreset(v);
+                  if (v !== "custom") setDateRange({});
+                }}
+              >
+                <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectValue placeholder="Ngày gửi" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="7">7 ngày gần đây</SelectItem>
+                  <SelectItem value="15">15 ngày gần đây</SelectItem>
+                  <SelectItem value="30">30 ngày gần đây</SelectItem>
+                  <SelectItem value="custom">Tùy chỉnh…</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* POPUP chọn custom date bằng shadcn popover */}
+            {datePreset === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-8 text-xs">
+                    Chọn khoảng thời gian
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-[260px] p-3" align="start">
+
+                  {/* Gợi ý thời gian */}
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-500 mb-1">Gợi ý thời gian</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[7, 15, 30].map((d) => (
+                        <Button
+                          key={d}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            const now = new Date();
+                            const from = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+                            setDateRange({
+                              from: from.toISOString().split("T")[0],
+                              to: now.toISOString().split("T")[0],
+                            });
+                          }}
+                        >
+                          {d} ngày
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  {/* Date range */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Chọn khoảng thời gian</p>
+
+                    <div className="flex items-center gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-[110px] justify-start text-xs">
+                            {dateRange.from ?? "Từ ngày"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="p-0">
+                          <Calendar
+                            mode="single"
+                            selected={dateRange.from ? new Date(dateRange.from) : undefined}
+                            onSelect={(d) =>
+                              d &&
+                              setDateRange((r) => ({
+                                ...r,
+                                from: d.toISOString().split("T")[0],
+                              }))
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-[110px] justify-start text-xs">
+                            {dateRange.to ?? "Đến ngày"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="p-0">
+                          <Calendar
+                            mode="single"
+                            selected={dateRange.to ? new Date(dateRange.to) : undefined}
+                            onSelect={(d) =>
+                              d &&
+                              setDateRange((r) => ({
+                                ...r,
+                                to: d.toISOString().split("T")[0],
+                              }))
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
 
           {/* Tabs đơn giản */}
           <div className="mt-3 flex items-center gap-2 border-b border-gray-200 pb-2">
@@ -349,8 +516,16 @@ export const FileManagerPhase1A: React.FC<FileManagerPhase1AProps> = ({
 
           <div className="mt-3 max-h-[70vh] overflow-y-auto">
             {(() => {
-              const source =
+              let source =
                 allTab === "media" ? mediaFiles : docFiles;
+
+              /** FILTER: Người gửi */
+              if (senderFilter !== "all") {
+                source = source.filter((f) =>
+                  messageList.find((m) => m.id === f.messageId)?.sender === senderFilter
+                );
+              }
+
 
               if (source.length === 0) {
                 return (

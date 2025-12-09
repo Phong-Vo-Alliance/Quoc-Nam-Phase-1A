@@ -230,8 +230,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
   return (
     <div
       className={`grid h-full min-h-0 gap-3 p-3 transition-all duration-300 ${showRight
-          ? "grid-cols-[260px,1fr,360px]" // có panel phải
-          : "grid-cols-[260px,1fr]"       // ẩn panel phải -> chỉ còn 2 cột
+          ? "grid-cols-[360px,1fr,360px]" // có panel phải
+          : "grid-cols-[360px,1fr]"       // ẩn panel phải -> chỉ còn 2 cột
         }`}
     >
 
