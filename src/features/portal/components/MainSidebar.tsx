@@ -8,6 +8,7 @@ import {
   Zap,
   Star,
   AlarmClock,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import QuocnamLogo from "@/assets/Quocnam_logo.png";
@@ -26,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { QuickMessageManager } from "./QuickMessageManager";
+import { TodoListManager } from "./TodoListManager";
 
 interface MainSidebarProps {
   activeView: "workspace" | "lead";
@@ -52,6 +54,7 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
 }) => {
   const [openTools, setOpenTools] = React.useState(false);
   const [openQuickMsg, setOpenQuickMsg] = React.useState(false);  
+  const [openTodoList, setOpenTodoList] = React.useState(false);
   const [openPending, setOpenPending] = React.useState(false);
   const [pendingTasks, setPendingTasks] = React.useState<typeof initialPending>(initialPending ?? []);
 
@@ -317,6 +320,20 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                 </div>
                 <span className="text-xs font-medium">Tin đánh dấu</span>
               </div>
+
+              {/* Danh sách việc cần làm */}
+              <div
+                className="flex flex-col items-center text-center text-gray-500 hover:text-brand-700 cursor-pointer"
+                onClick={() => {
+                  setOpenTools(false);
+                  setOpenTodoList(true);
+                }}
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 mb-1">
+                  <ListTodo className="h-5 w-5 text-brand-600" />
+                </div>
+                <span className="text-xs font-medium">Danh sách việc cần làm</span>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
@@ -346,7 +363,8 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
         </button>
       </div>
       
-      <QuickMessageManager open={openQuickMsg} onOpenChange={setOpenQuickMsg} />      
+      <QuickMessageManager open={openQuickMsg} onOpenChange={setOpenQuickMsg} />
+      <TodoListManager open={openTodoList} onOpenChange={setOpenTodoList} />      
 
       {/* Modal chọn ngày */}
       <Dialog open={openDateModal} onOpenChange={setOpenDateModal}>
