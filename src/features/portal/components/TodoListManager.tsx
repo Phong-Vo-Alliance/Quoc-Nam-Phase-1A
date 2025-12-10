@@ -7,8 +7,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Circle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Circle, CheckCircle2, ChevronDown, ChevronUp, Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 
 interface TodoItem {
   id: number;
@@ -42,6 +44,10 @@ export const TodoListManager: React.FC<{
   
   const newTitleRef = useRef<HTMLInputElement>(null);
   const editTitleRef = useRef<HTMLInputElement>(null);
+
+  // Refs to detect if focus is still inside add/edit forms
+  const newFormRef = useRef<HTMLDivElement | null>(null);
+  const editingRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Focus on new todo input when adding
   useEffect(() => {
@@ -79,7 +85,23 @@ export const TodoListManager: React.FC<{
     setNewDetail("");
   };
 
+  // Previously this saved immediately on blur; we now only save when focus leaves the whole new-form container.
+  const handleBlurNew = () => {
+    // Defer to allow document.activeElement to update to the newly focused element
+    setTimeout(() => {
+      if (!newFormRef.current) {
+        handleSaveNew();
+        return;
+      }
+      const active = document.activeElement;
+      if (!newFormRef.current.contains(active)) {
+        handleSaveNew();
+      }
+    }, 0);
+  };
+
   const handleCancelNew = () => {
+    // keep behavior: save if has content, otherwise just close
     handleSaveNew();
   };
 
@@ -104,6 +126,20 @@ export const TodoListManager: React.FC<{
     setEditingId(null);
     setEditTitle("");
     setEditDetail("");
+  };
+
+  // Only save edit if focus leaves the editing container for that item
+  const handleBlurEdit = (id: number) => {
+    setTimeout(() => {
+      const el = editingRefs.current[id];
+      const active = document.activeElement;
+      if (!el || !el.contains(active)) {
+        // Only trigger save if we're still editing this id
+        if (editingId === id) {
+          handleSaveEdit();
+        }
+      }
+    }, 0);
   };
 
   const handleToggleComplete = (id: number) => {
@@ -142,7 +178,7 @@ export const TodoListManager: React.FC<{
       <DialogContent className="max-w-[600px] max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Danh sách việc cần làm
+            Danh Sách Việc Cần Làm
           </DialogTitle>
         </DialogHeader>
 
@@ -150,21 +186,23 @@ export const TodoListManager: React.FC<{
           {/* Add New Link */}
           <div className="mb-4">
             {!isAddingNew ? (
-              <button
+              <Button
                 onClick={handleAddNew}
                 className="flex items-center gap-2 text-brand-600 hover:text-brand-700 text-sm font-medium"
+                variant= "link"
               >
                 <Plus className="h-4 w-4" />
                 <span>Thêm công việc mới</span>
-              </button>
+              </Button>
             ) : (
-              <div className="mb-3 rounded-lg border border-brand-200 bg-brand-50 p-3">
+              // attach ref to whole new-form container so we can detect focus leaving it
+              <div ref={newFormRef} className="mb-3 rounded-lg border-brand-200 bg-brand-50 p-3">
                 <div className="space-y-2">
                   <Input
                     ref={newTitleRef}
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    onBlur={handleCancelNew}
+                    onBlur={handleBlurNew}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -179,7 +217,7 @@ export const TodoListManager: React.FC<{
                   <Textarea
                     value={newDetail}
                     onChange={(e) => setNewDetail(e.target.value)}
-                    onBlur={handleCancelNew}
+                    onBlur={handleBlurNew}
                     placeholder="Chi tiết"
                     className="text-sm h-20"
                   />
@@ -203,28 +241,34 @@ export const TodoListManager: React.FC<{
                 <div
                   key={todo.id}
                   className={cn(
-                    "group relative rounded-lg border bg-white p-3 transition-all hover:border-brand-200 hover:bg-brand-50",
+                    "group relative rounded-lg bg-white transition-all hover:border-brand-200 hover:bg-brand-50",
                     deletedId === todo.id && "fade-out"
                   )}
                 >
-                  <div className="flex gap-3">
-                    {/* Radio icon */}
-                    <button
+                  <div className="flex">
+                    {/* Radio icon */}                    
+                    <IconButton
+                      icon={<Circle className="h-5 w-5 " />}
+                      className="left-0 top-0 h-5 w-5 m-1 text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                      title="Đánh dấu hoàn thành"
                       onClick={() => handleToggleComplete(todo.id)}
-                      className="flex-shrink-0 mt-1"
-                    >
-                      <Circle className="h-5 w-5 text-gray-400 hover:text-brand-600 transition-colors" />
-                    </button>
+                    />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {isEditing ? (
-                        <div className="space-y-2">
+                        // attach a ref for this editing item so blur logic can check focus containment
+                        <div
+                          ref={(el) => {
+                            editingRefs.current[todo.id] = el;
+                          }}
+                          className="space-y-2"
+                        >
                           <Input
                             ref={editTitleRef}
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
-                            onBlur={handleSaveEdit}
+                            onBlur={() => handleBlurEdit(todo.id)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
@@ -239,7 +283,7 @@ export const TodoListManager: React.FC<{
                           <Textarea
                             value={editDetail}
                             onChange={(e) => setEditDetail(e.target.value)}
-                            onBlur={handleSaveEdit}
+                            onBlur={() => handleBlurEdit(todo.id)}
                             placeholder="Chi tiết"
                             className="text-sm h-16"
                           />
@@ -259,12 +303,12 @@ export const TodoListManager: React.FC<{
                     </div>
 
                     {/* Delete icon */}
-                    <button
+                    <IconButton
+                      icon={<Trash2 className="h-3.5 w-3.5" />}
+                      className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                      title="Xóa công việc"
                       onClick={() => handleDelete(todo.id)}
-                      className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="h-4 w-4 text-gray-400 hover:text-rose-600" />
-                    </button>
+                    />
                   </div>
                 </div>
               );
@@ -292,18 +336,18 @@ export const TodoListManager: React.FC<{
                     <div
                       key={todo.id}
                       className={cn(
-                        "group relative rounded-lg border bg-gray-50 p-3 transition-all",
+                        "group relative rounded-lg bg-gray-50 transition-all",
                         deletedId === todo.id && "fade-out"
                       )}
                     >
                       <div className="flex gap-3">
                         {/* Checkmark icon */}
-                        <button
+                        <IconButton
+                          icon={<CheckCircle2 className="h-5 w-5 text-brand-600" />}
+                          className="left-0 top-0 h-5 w-5 m-1 text-brand-600"
+                          title="Đã hoàn thành"
                           onClick={() => handleToggleComplete(todo.id)}
-                          className="flex-shrink-0 mt-1"
-                        >
-                          <CheckCircle2 className="h-5 w-5 text-brand-600" />
-                        </button>
+                        />
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
@@ -318,12 +362,12 @@ export const TodoListManager: React.FC<{
                         </div>
 
                         {/* Delete icon */}
-                        <button
+                        <IconButton
+                          icon={<Trash2 className="h-3.5 w-3.5" />}
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                          title="Xóa công việc"
                           onClick={() => handleDelete(todo.id)}
-                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="h-4 w-4 text-gray-400 hover:text-rose-600" />
-                        </button>
+                        />
                       </div>
                     </div>
                   ))}
