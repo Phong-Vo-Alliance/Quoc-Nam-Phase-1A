@@ -64,13 +64,9 @@ export const TodoListManager: React.FC<{
   };
 
   const handleSaveNew = () => {
-    if (!newTitle.trim() && !newDetail.trim()) {
-      // Cancel if both are empty
-      setIsAddingNew(false);
-      return;
-    }
-
-    if (newTitle.trim() || newDetail.trim()) {
+    const hasContent = newTitle.trim() || newDetail.trim();
+    
+    if (hasContent) {
       const newId = Date.now();
       setTodos((prev) => [
         { id: newId, title: newTitle, detail: newDetail, completed: false },
@@ -84,11 +80,7 @@ export const TodoListManager: React.FC<{
   };
 
   const handleCancelNew = () => {
-    if (!newTitle.trim() && !newDetail.trim()) {
-      setIsAddingNew(false);
-    } else {
-      handleSaveNew();
-    }
+    handleSaveNew();
   };
 
   const handleStartEdit = (todo: TodoItem) => {
