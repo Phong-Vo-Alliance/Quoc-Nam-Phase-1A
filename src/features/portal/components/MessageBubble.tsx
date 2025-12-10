@@ -463,6 +463,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {data.isPinned ? <StarOff size={14} /> : <Star size={14} />}
               </button>
           )}
+
           {!data.taskId && (
             <button
               title="Giao Task"
@@ -482,7 +483,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             </button>
           )}
 
-          {isShowPhasedFeatures && !isReceived && viewMode==="lead" && (           
+          {!isReceived && viewMode==="lead" && (           
             <button
               onClick={() => onReceiveInfo?.(data)}
               title="Tiếp nhận thông tin"

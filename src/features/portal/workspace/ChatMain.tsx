@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Search, PanelRightClose, PanelRightOpen, MessageSquareText, Paperclip, Image as ImageIcon, AlarmClock, Type, SendHorizonal } from 'lucide-react';
+import { Search, PanelRightClose, PanelRightOpen, MessageSquareText, Paperclip, Image as ImageIcon, AlarmClock, Type, SendHorizonal, ChevronLeft, MoreVertical, } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
 import type { Message, Task, PinnedMessage, FileAttachment, GroupChat, ReceivedInfo, TaskLogMessage } from '../types';
@@ -44,7 +44,13 @@ export const ChatMain: React.FC<{
   selectedChat: { type: "group" | "dm"; id: string } | null;
   currentWorkTypeId?: string;
   title?: string; // NEW: tiêu đề động (group/dm)
-  messages: Message[];
+
+  // mobile layout
+  isMobile?: boolean;
+  onBack?: () => void;
+  onOpenMobileMenu?: () => void;
+
+  messages: Message[];  
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   myWork: Task[];
   showRight: boolean;
@@ -75,6 +81,11 @@ export const ChatMain: React.FC<{
   selectedChat,
   currentWorkTypeId,
   title = "Trò chuyện",
+
+  isMobile = false,
+  onBack,
+  onOpenMobileMenu,
+  
   messages, setMessages, myWork,
   showRight, setShowRight, showSearch, setShowSearch, q, setQ, searchInputRef,
   onOpenCloseModalFor, openPreview, onTogglePin,
@@ -93,9 +104,19 @@ export const ChatMain: React.FC<{
   // const [showCloseMenu, setShowCloseMenu] = React.useState(false);
   // const [inputValue, setInputValue] = React.useState("");
   // const [pinnedMessages, setPinnedMessages] = React.useState<PinnedMessage[]>([]);
-    const [showCloseMenu, setShowCloseMenu] = React.useState(false);
+  const [showCloseMenu, setShowCloseMenu] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const isMobileLayout = isMobile;
+  const memberCount = selectedGroup?.members?.length ?? 0;
+  const headerTitle = selectedGroup?.name ?? title;
+
+  const mainContainerCls = isMobileLayout
+    ? "flex flex-col w-full h-full min-h-0 bg-white"
+    : "flex flex-col w-full rounded-2xl border border-gray-300 bg-white shadow-sm h-full min-h-0";
+
+  const headerPaddingCls = isMobileLayout ? "px-3 py-2" : "pt-4 pr-4 pl-4";
 
   const handlePinToggle = useCallback(
     (msg: Message) => {
@@ -224,83 +245,160 @@ export const ChatMain: React.FC<{
   }, [scrollToMessageId]);
 
   return (
-    <main className="flex flex-col w-full rounded-2xl border border-gray-300 bg-white shadow-sm h-full min-h-0">
+    <main className={mainContainerCls}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b pt-4 pr-4 pl-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <Avatar name="Group" />
-          <div>
-            <div className="text-sm font-semibold text-gray-800">{selectedGroup?.name}</div>
-            <div className="text-xs text-gray-500">
-              4 thành viên • 2 người đang xem • <Badge type="waiting">Chờ phản hồi</Badge>
+      <div
+        className={`flex items-center justify-between border-b shrink-0 ${headerPaddingCls}`}
+      >
+        {isMobileLayout ? (
+          <>
+            {/* HEADER MOBILE */}
+            <div className="flex items-center gap-2 min-w-0">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="mr-1 flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <ChevronLeft className="h-5 w-5 text-gray-700" />
+                </button>
+              )}
+              <Avatar name={headerTitle} />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-800 truncate">
+                  {headerTitle}
+                </div>
+                <div className="text-[11px] text-gray-500 truncate">
+                  {memberCount > 0 ? `${memberCount} thành viên` : "Nhóm chat"}{" "}
+                  • <Badge type="waiting">Đang trao đổi</Badge>
+                </div>
+              </div>
             </div>
-            {/* WorkType segmented control (nếu có) */}
-            {selectedGroup?.workTypes && selectedGroup.workTypes.length > 0 && (
-              <div className="mt-2">
-                <LinearTabs
-                  tabs={selectedGroup.workTypes.map(w => ({
-                    key: w.id,
-                    label: w.name,
-                  }))}
-                  active={selectedWorkTypeId ?? currentWorkTypeId ?? selectedGroup.workTypes[0]?.id}
-                  onChange={(id) => onChangeWorkType?.(id)}
-                  textClass="text-xs"
-                  noWrap={true}
+            <div className="flex items-center gap-1">
+              {showSearch && (
+                <input
+                  ref={searchInputRef}
+                  autoFocus
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Tìm tin nhắn"
+                  className={`w-40 ${inputCls} transition-all`}
                 />
+              )}
+              <IconButton
+                className="rounded-full bg-white"
+                label={showSearch ? "Đóng tìm kiếm" : "Tìm kiếm trong chat"}
+                onClick={() => setShowSearch(!showSearch)}
+                icon={<Search className="h-4 w-4 text-brand-600" />}
+              />
+              <button
+                type="button"
+                onClick={onOpenMobileMenu}
+                className="ml-1 flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
+              >
+                <MoreVertical className="h-4 w-4 text-gray-700" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* HEADER DESKTOP (giữ logic cũ) */}
+            <div className="flex items-center gap-3">
+              <Avatar name={headerTitle} />
+              <div>
+                <div className="text-sm font-semibold text-gray-800">
+                  {headerTitle}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {memberCount > 0
+                    ? `${memberCount} thành viên`
+                    : "Nhóm chat"}{" "}
+                  • 2 người đang xem •{" "}
+                  <Badge type="waiting">Chờ phản hồi</Badge>
+                </div>
+                {/* WorkType segmented control (nếu có) */}
+                {selectedGroup?.workTypes &&
+                  selectedGroup.workTypes.length > 0 && (
+                    <div className="mt-2">
+                      <LinearTabs
+                        tabs={selectedGroup.workTypes.map((w) => ({
+                          key: w.id,
+                          label: w.name,
+                        }))}
+                        active={
+                          selectedWorkTypeId ??
+                          currentWorkTypeId ??
+                          selectedGroup.workTypes[0]?.id
+                        }
+                        onChange={(id) => onChangeWorkType?.(id)}
+                        textClass="text-xs"
+                        noWrap
+                      />
+                    </div>
+                  )}
               </div>
-            )}
-
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {showSearch && (
-            <input
-              ref={searchInputRef}
-              autoFocus
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm tin nhắn trong hội thoại"
-              className={`w-72 ${inputCls} transition-all`}
-            />
-          )}
-          <IconButton
-            className="rounded-full bg-white"
-            label="Tìm trong hội thoại"
-            onClick={() => setShowSearch(!showSearch)}
-            icon={<Search className="h-4 w-4 text-brand-600" />}
-          />
-          {/* <div className="relative">
-            <button className={btn(false)} onClick={() => setShowCloseMenu((v) => !v)}>
-              Đóng/Hoàn tất
-            </button>
-            {showCloseMenu && (
-              <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-lg border bg-white shadow-lg">
-                <div className="px-3 py-2 text-xs text-gray-500">Chọn công việc cần đóng</div>
-                {myWork.filter((item) => item.status !== 'done').length === 0 ? (
-                  <div className="px-3 py-2 text-xs text-gray-400">Không có công việc đang mở</div>
-                ) : (
-                  myWork.filter((item) => item.status !== 'done').map((item) => (
-                    <button key={item.id} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50" onClick={() => { onOpenCloseModalFor(item.id); setShowCloseMenu(false); }}>
-                      <span className="truncate pr-2">{item.title}</span>
-                      {* Badge mapping cũ, bạn có thể remap theo TaskStatus nếu muốn *}
-                      <Badge type={"processing" as any}>Đang xử lý</Badge>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div> */}
-          <IconButton
-            className="rounded-ful bg-white"
-            label={showRight ? 'Ẩn panel phải' : 'Hiện panel phải'}
-            onClick={() => setShowRight(!showRight)}
-            icon={showRight ? <PanelRightClose className="h-4 w-4 text-brand-600" /> : <PanelRightOpen className="h-4 w-4 text-brand-600" />}
-          />
-        </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {showSearch && (
+                <input
+                  ref={searchInputRef}
+                  autoFocus
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Tìm tin nhắn trong hội thoại"
+                  className={`w-72 ${inputCls} transition-all`}
+                />
+              )}
+              <IconButton
+                className="rounded-full bg-white"
+                label={showSearch ? "Đóng tìm kiếm" : "Tìm kiếm trong chat"}
+                onClick={() => setShowSearch(!showSearch)}
+                icon={<Search className="h-4 w-4 text-brand-600" />}
+              />
+              <IconButton
+                className="rounded-full bg-white"
+                label={showRight ? "Ẩn panel phải" : "Hiện panel phải"}
+                onClick={() => setShowRight(!showRight)}
+                icon={
+                  showRight ? (
+                    <PanelRightClose className="h-4 w-4 text-brand-600" />
+                  ) : (
+                    <PanelRightOpen className="h-4 w-4 text-brand-600" />
+                  )
+                }
+              />
+            </div>
+          </>
+        )}
       </div>
 
+      {/* WorkType tabs riêng cho mobile (nếu có) */}
+      {isMobileLayout &&
+        selectedGroup?.workTypes &&
+        selectedGroup.workTypes.length > 0 && (
+          <div className="border-b px-3 pb-2">
+            <LinearTabs
+              tabs={selectedGroup.workTypes.map((w) => ({
+                key: w.id,
+                label: w.name,
+              }))}
+              active={
+                selectedWorkTypeId ??
+                currentWorkTypeId ??
+                selectedGroup.workTypes[0]?.id
+              }
+              onChange={(id) => onChangeWorkType?.(id)}
+              textClass="text-xs"
+              noWrap
+            />
+          </div>
+        )}
+
       {/* Message list */}
-      <div className="flex-1 overflow-y-auto space-y-1 p-4 min-h-0 bg-green-900/15">
+      <div
+        className={`flex-1 overflow-y-auto space-y-1 min-h-0 bg-green-900/15 ${isMobileLayout ? "p-2" : "p-4"
+          }`}
+      >
         {messages.map((msg, i) => {
           const infoForMsg = receivedInfos?.find(i => i.messageId === msg.id);
           const isReceived = !!infoForMsg;
