@@ -15,7 +15,13 @@ import { GroupTransferSheet } from "@/components/sheet/GroupTransferSheet";
 import type { ChecklistTemplateMap, ChecklistTemplateItem } from './types';
 import { TaskLogThreadSheet } from "./workspace/TaskLogThreadSheet";
 
-export default function PortalWireframes() {
+type PortalMode = "desktop" | "mobile";
+
+interface PortalWireframesProps {
+  portalMode?: PortalMode;
+}
+
+export default function PortalWireframes({ portalMode = "desktop" }: PortalWireframesProps) {
   // ---------- shared UI state ----------
   const [tab, setTab] = useState<'info' | 'order' | 'tasks'>('info');
   const [mode, setMode] = useState<'CSKH' | 'THUMUA'>('CSKH');
@@ -946,56 +952,63 @@ const handleOpenSourceMessage = React.useCallback(
       : [];
 
   return (
-    <div className="w-screen h-screen flex overflow-hidden bg-gray-50 text-gray-800">
+    <div
+      className={`${
+        portalMode === "mobile" ? "w-full h-full" : "w-screen h-screen"
+      } flex overflow-hidden bg-gray-50 text-gray-800`}
+    >
       {/* MainSidebar */}
-      <MainSidebar
-        activeView={view}
-        viewMode={viewMode}
-        workspaceMode={workspaceMode}
-        onSelect={(key) => {
-          if (key === "logout") {
-            console.log("Logging out...");
-            return;
-          }
-          if (key === "pinned") {
-            // bật chế độ pinned trong workspace
-            setView("workspace");
-            setWorkspaceMode("pinned");
-            // setShowPinned(true);
-            return;
-          }
+      {portalMode !== "mobile" && (
+        <MainSidebar
+          activeView={view}
+          viewMode={viewMode}
+          workspaceMode={workspaceMode}
+          onSelect={(key) => {
+            if (key === "logout") {
+              console.log("Logging out...");
+              return;
+            }
+            if (key === "pinned") {
+              // bật chế độ pinned trong workspace
+              setView("workspace");
+              setWorkspaceMode("pinned");
+              // setShowPinned(true);
+              return;
+            }
 
-          // Nếu user chọn workspace khi đang ở pinned → quay lại default
-          if (key === "workspace") {
-            setWorkspaceMode("default");
-            setView("workspace");
-            return;
-          }
+            // Nếu user chọn workspace khi đang ở pinned → quay lại default
+            if (key === "workspace") {
+              setWorkspaceMode("default");
+              setView("workspace");
+              return;
+            }
 
-          setView(key); // 'lead'
-        }}
-         pendingTasks={[
-           {
-             id: "task_po1246_sapxep",
-             title: "PO#1246 – Sắp xếp vị trí & nhập kho",
-             workTypeName: "Nhận hàng",
-             pendingUntil: "2025-11-13T09:00:00Z",
-           },
-           {
-             id: "task_demo2",
-             title: "Đổi trả – kiểm phiếu kho",
-             workTypeName: "Đổi Trả",
-             pendingUntil: "2025-11-14T17:00:00Z",
-           },
-         ]}
+            setView(key); // 'lead'
+          }}
+          pendingTasks={[
+            {
+              id: "task_po1246_sapxep",
+              title: "PO#1246 – Sắp xếp vị trí & nhập kho",
+              workTypeName: "Nhận hàng",
+              pendingUntil: "2025-11-13T09:00:00Z",
+            },
+            {
+              id: "task_demo2",
+              title: "Đổi trả – kiểm phiếu kho",
+              workTypeName: "Đổi Trả",
+              pendingUntil: "2025-11-14T17:00:00Z",
+            },
+          ]}
 
-         showPinnedToast={showPinnedToast}
-      />
-
+          showPinnedToast={showPinnedToast}
+        />
+      )}
+      
       {/* Nội dung chính */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {view === 'workspace' ? (
           <WorkspaceView
+            layoutMode={portalMode === "mobile" ? "mobile" : "desktop"}
             groups={groupsMerged}
             selectedGroup={selectedGroup}
             messages={messages}

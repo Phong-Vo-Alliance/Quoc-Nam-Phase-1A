@@ -242,8 +242,7 @@ const TaskCard: React.FC<{
                 )}
               </span>
 
-
-              {total > 0 && (
+              {/* {total > 0 && (
                 <>
                   <span>•</span>
                   <span>
@@ -253,7 +252,7 @@ const TaskCard: React.FC<{
                     </span>
                   </span>
                 </>
-              )}
+              )} */}
 
               {viewMode === "lead" && (
                 <>

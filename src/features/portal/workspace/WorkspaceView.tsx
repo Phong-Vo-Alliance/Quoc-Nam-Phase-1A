@@ -138,6 +138,9 @@ interface WorkspaceViewProps {
   onOpenTaskLog?: (taskId: string) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
   onOpenSourceMessage?: (messageId: string) => void;
+
+  // layout: desktop mặc định, mobile dùng cho /mobile
+  layoutMode?: "desktop" | "mobile";
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
@@ -194,11 +197,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onOpenTaskLog,
     taskLogs,
     onOpenSourceMessage,
+    layoutMode = "desktop",
   } = props;
-
   
+  const isMobile = layoutMode === "mobile";
 
-  // 🔎 Tạo title cho ChatMain từ selectedChat
+  const [mobileTab, setMobileTab] = React.useState<"home" | "chat" | "work">(
+    "home"
+  );
+
+  const handleMobileSelectChat = (target: ChatTarget) => {
+    onSelectChat(target);
+    if (isMobile) {
+      setMobileTab("chat");
+    }
+  };
+
+  // Tạo title cho ChatMain từ selectedChat
   const chatTitle =
     selectedChat?.type === "group"
       ? groups.find((g) => g.id === selectedChat.id)?.name ?? "Nhóm"
@@ -227,11 +242,208 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     return new Date().toISOString();
   };
 
+    if (isMobile) {
+    return (
+      <div className="flex h-full flex-col bg-gray-50">
+        {/* Content theo tab */}
+        <div className="flex-1 min-h-0">
+          {/* TAB 1: HOME = LeftSidebar / Pinned */}
+          {mobileTab === "home" && (
+            <div className="h-full min-h-0 overflow-y-auto">
+              {workspaceMode === "pinned" ? (
+                <PinnedMessagesPanel
+                  messages={pinnedMessages ?? []}
+                  onClose={onClosePinned || (() => props.setWorkspaceMode("default"))}
+                  onOpenChat={(pin) => {
+                    handleMobileSelectChat({ type: "group", id: pin.chatId });
+                    onOpenSourceMessage?.(pin.id);
+                  }}
+                  onUnpin={onUnpinMessage}
+                  onPreview={(file) => openPreview?.(file as any)}
+                />
+              ) : (
+                <LeftSidebar
+                  currentUserId={"u_diem_chi"}
+                  groups={groups}
+                  selectedGroup={selectedGroup as any}
+                  onSelectGroup={(id) => {
+                    onSelectGroup(id);
+                    handleMobileSelectChat({ type: "group", id });
+                  }}
+                  contacts={contacts}
+                  onSelectChat={handleMobileSelectChat}
+                />
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: CHAT */}
+          {mobileTab === "chat" && (
+            <div className="h-full min-h-0">
+              <ChatMain
+                selectedGroup={selectedGroup as any}                
+                isMobile={true}
+                onBack={() => setMobileTab("home")}
+                // messages & state
+                messages={messages}
+                setMessages={setMessages}
+                myWork={[]}
+                showRight={showRight}
+                setShowRight={setShowRight}
+                showSearch={showSearch}
+                setShowSearch={setShowSearch}
+                q={q}
+                setQ={setQ}
+                searchInputRef={searchInputRef}
+                onOpenCloseModalFor={() => {}}
+                openPreview={openPreview}
+                // Pin message → dùng chung logic đang có
+                onTogglePin={(msg) => {
+                  setPinnedMessages((prev) => {
+                    const exists = prev.some((p) => p.id === msg.id);
+
+                    // Nếu đã pin → bỏ pin
+                    if (exists) {
+                      return prev.filter((p) => p.id !== msg.id);
+                    }
+
+                    // Nếu chưa pin → thêm mới
+                    const pinnedType =
+                      msg.type === "image" || msg.files?.[0]?.type === "image"
+                        ? "image"
+                        : (msg.fileInfo?.type || msg.files?.[0]?.type)
+                        ? "file"
+                        : "text";
+
+                    return [
+                      ...prev,
+                      {
+                        id: msg.id,
+                        chatId: msg.groupId,
+                        groupName: selectedGroup?.name ?? "",
+                        workTypeName:
+                          selectedGroup?.workTypes?.find(
+                            (w) => w.id === selectedWorkTypeId
+                          )?.name ?? "",
+                        sender: msg.sender,
+                        type: pinnedType,
+                        content:
+                          msg.type === "text" ? msg.content : undefined,
+                        preview:
+                          msg.type === "text"
+                            ? msg.content?.slice(0, 100)
+                            : "[Đính kèm]",
+                        fileInfo: msg.fileInfo ?? msg.files?.[0] ?? undefined,
+                        time: resolvePinnedTime(msg),
+                      },
+                    ];
+                  });
+                }}
+                // tiêu đề / context
+                title={chatTitle}
+                currentWorkTypeId={selectedWorkTypeId}
+                workTypes={workTypes}
+                onChangeWorkType={onChangeWorkType}
+                currentUserId={currentUserId}
+                currentUserName={currentUserName}
+                selectedChat={selectedChat}
+                // info / task log
+                onReceiveInfo={onReceiveInfo}
+                onAssignFromMessage={onAssignFromMessage}
+                setTab={setTab}
+                receivedInfos={receivedInfos}
+                viewMode={viewMode}
+                onOpenTaskLog={onOpenTaskLog}
+                taskLogs={taskLogs}
+              />
+            </div>
+          )}
+
+          {/* TAB 3: WORK = RightPanel full screen */}
+          {mobileTab === "work" && (
+            <div className="h-full min-h-0 overflow-hidden flex flex-col">
+              <RightPanel
+                tab={tab}
+                setTab={setTab}
+                groupId={selectedGroup?.id}
+                groupName={
+                  selectedChat?.type === "group"
+                    ? groups.find((g) => g.id === selectedChat.id)?.name ??
+                      "Nhóm"
+                    : "Trò chuyện"
+                }
+                workTypeName={
+                  workTypes?.find((w) => w.id === selectedWorkTypeId)?.name ??
+                  "—"
+                }
+                checklistVariants={
+                  selectedGroup?.workTypes?.find(
+                    (w) => w.id === selectedWorkTypeId
+                  )?.checklistVariants
+                }
+                viewMode={viewMode}
+                selectedWorkTypeId={selectedWorkTypeId}
+                currentUserId={currentUserId}
+                tasks={tasks}
+                members={groupMembers}
+                onChangeTaskStatus={onChangeTaskStatus}
+                onReassignTask={undefined}
+                onToggleChecklist={onToggleChecklist}
+                onUpdateTaskChecklist={onUpdateTaskChecklist}
+                checklistTemplates={checklistTemplates}
+                setChecklistTemplates={setChecklistTemplates}
+                receivedInfos={receivedInfos}
+                onTransferInfo={onTransferInfo}
+                onAssignInfo={onAssignInfo}
+                onOpenGroupTransfer={openTransferSheet}
+                applyTemplateToTasks={applyTemplateToTasks}
+                taskLogs={taskLogs}
+                onOpenTaskLog={onOpenTaskLog}
+                onOpenSourceMessage={onOpenSourceMessage}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Bottom nav */}
+        <nav className="flex h-14 border-t bg-white">
+          <button
+            type="button"
+            onClick={() => setMobileTab("home")}
+            className={`flex-1 flex flex-col items-center justify-center text-xs font-medium ${
+              mobileTab === "home" ? "text-brand-600" : "text-gray-500"
+            }`}
+          >
+            <span>Home</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("chat")}
+            className={`flex-1 flex flex-col items-center justify-center text-xs font-medium ${
+              mobileTab === "chat" ? "text-brand-600" : "text-gray-500"
+            }`}
+          >
+            <span>Chat</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("work")}
+            className={`flex-1 flex flex-col items-center justify-center text-xs font-medium ${
+              mobileTab === "work" ? "text-brand-600" : "text-gray-500"
+            }`}
+          >
+            <span>Công việc</span>
+          </button>
+        </nav>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`grid h-full min-h-0 gap-3 p-3 transition-all duration-300 ${showRight
-          ? "grid-cols-[260px,1fr,360px]" // có panel phải
-          : "grid-cols-[260px,1fr]"       // ẩn panel phải -> chỉ còn 2 cột
+          ? "grid-cols-[360px,1fr,360px]" // có panel phải
+          : "grid-cols-[360px,1fr]"       // ẩn panel phải -> chỉ còn 2 cột
         }`}
     >
 
@@ -269,6 +481,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
         {/* ChatMain: truyền title động theo selectedChat */}
         <ChatMain
           selectedGroup={selectedGroup as any}
+          isMobile={false}
           // các prop ChatMain hiện có:
           messages={messages}            // TODO: bạn sẽ nối messages theo selectedChat ở bước tiếp theo
           setMessages={setMessages}   // TODO: idem
