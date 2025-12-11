@@ -180,6 +180,8 @@ export default function PortalWireframes({ portalMode = "desktop" }: PortalWiref
     id: "grp_vh_kho", // mặc định mở nhóm “Vận hành - Kho Hàng”
   });
 
+  const onClearSelectedChat = () => setSelectedChat(null);  
+
   // Checklist Template theo WorkType + Variant
   const [checklistTemplates, setChecklistTemplates] = React.useState<ChecklistTemplateMap>(mockChecklistTemplatesByVariant);
 
@@ -1016,7 +1018,8 @@ const handleOpenSourceMessage = React.useCallback(
             onSelectGroup={handleSelectGroup}
             contacts={contacts}
             selectedChat={selectedChat}
-            onSelectChat={handleSelectChat}            
+            onSelectChat={handleSelectChat}
+            onClearSelectedChat={onClearSelectedChat}
             leftTab={leftTab}
             setLeftTab={setLeftTab}
             available={available}
@@ -1081,6 +1084,16 @@ const handleOpenSourceMessage = React.useCallback(
             }}
             taskLogs={taskLogs}
             onOpenSourceMessage={handleOpenSourceMessage}
+            onOpenQuickMsg={() => {
+              // Mobile: tạm hiển thị toast, có thể thay bằng mở QuickMessageManager khi bạn muốn mount ở mobile
+              pushToast("Tin nhắn nhanh: tính năng đang phát triển cho mobile.", "info");
+            }}
+            onOpenPinned={() => {
+              setWorkspaceMode("pinned");
+            }}
+            onOpenTodoList={() => {
+              pushToast("Việc cần làm: tính năng đang phát triển cho mobile.", "info");
+            }}
           />          
         ) : (
           <TeamMonitorView

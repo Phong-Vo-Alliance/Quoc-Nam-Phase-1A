@@ -7,6 +7,7 @@ import type { Message, Task, PinnedMessage, FileAttachment, GroupChat, ReceivedI
 import { MessageBubble } from "@/features/portal/components/MessageBubble";
 import { convertToPinnedMessage } from "@/features/portal/utils/convertToPinnedMessage";
 import { LinearTabs } from '../components/LinearTabs';
+import { Button } from '@/components/ui/button';
 
 type ViewMode = "lead" | "staff";
 
@@ -254,14 +255,12 @@ export const ChatMain: React.FC<{
           <>
             {/* HEADER MOBILE */}
             <div className="flex items-center gap-2 min-w-0">
-              {onBack && (
-                <button
-                  type="button"
+              {onBack && (                
+                <IconButton
+                  className="rounded-full bg-white"
                   onClick={onBack}
-                  className="mr-1 flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
-                >
-                  <ChevronLeft className="h-5 w-5 text-gray-700" />
-                </button>
+                  icon={<ChevronLeft className="h-5 w-5 text-brand-600" />}
+                />
               )}
               <Avatar name={headerTitle} />
               <div className="min-w-0">
