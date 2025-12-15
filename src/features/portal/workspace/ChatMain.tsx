@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Search, PanelRightClose, PanelRightOpen, MessageSquareText, Paperclip, Image as ImageIcon, AlarmClock, Type, SendHorizonal, ChevronLeft, MoreVertical, } from 'lucide-react';
+import { Search, PanelRightClose, PanelRightOpen, MessageSquareText, Paperclip, Image as ImageIcon, AlarmClock, Type, SendHorizonal, ChevronLeft, MoreVertical, ArrowLeftRight } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
 import type { Message, Task, PinnedMessage, FileAttachment, GroupChat, ReceivedInfo, TaskLogMessage } from '../types';
@@ -74,7 +74,10 @@ export const ChatMain: React.FC<{
   setTab: (v: "info" | "order" | "tasks") => void;
   viewMode?: ViewMode; // 'lead' | 'staff'  
   onOpenTaskLog?: (taskId: string) => void;
-  taskLogs?: Record<string, TaskLogMessage[]>
+  taskLogs?: Record<string, TaskLogMessage[]>;
+  // NEW: Expand right panel
+  rightExpanded?: boolean;
+  onToggleRightExpand?: () => void;
 }> = ({
   selectedGroup,
   currentUserId,
@@ -100,11 +103,10 @@ export const ChatMain: React.FC<{
   setTab,
   viewMode = "staff",
   onOpenTaskLog, 
-  taskLogs = {},
+  taskLogs = {},  
+  rightExpanded = false,
+  onToggleRightExpand,
 }) => {
-  // const [showCloseMenu, setShowCloseMenu] = React.useState(false);
-  // const [inputValue, setInputValue] = React.useState("");
-  // const [pinnedMessages, setPinnedMessages] = React.useState<PinnedMessage[]>([]);
   const [showCloseMenu, setShowCloseMenu] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -121,10 +123,7 @@ export const ChatMain: React.FC<{
 
   const handlePinToggle = useCallback(
     (msg: Message) => {
-      // 1) Báo lên trên để cập nhật danh sách pinned (PortalWireframes / WorkspaceView)
       onTogglePin(msg);
-
-      // 2) Đồng thời toggle isPinned trên chính message để icon Star/StarOff hiển thị đúng
       setMessages((prev) =>
         prev.map((m) =>
           m.id === msg.id ? { ...m, isPinned: !m.isPinned } : m
@@ -134,8 +133,6 @@ export const ChatMain: React.FC<{
     [onTogglePin, setMessages]
   );
 
-  // const handleOpenFile = (msg: Message) => openPreview(msg.fileInfo!);
-  // const handleOpenImage = (msg: Message) => openPreview(msg.fileInfo!);
   const handleOpenFile = useCallback((msg: Message) => {
     if (msg.fileInfo) openPreview(msg.fileInfo);
   }, [openPreview]);
@@ -145,7 +142,6 @@ export const ChatMain: React.FC<{
   const resolveThreadId = () => {
     if (!selectedChat) return "unknown";
     if (selectedChat.type === "group") return selectedChat.id;
-    // DM: tạo thread id ổn định từ 2 user
     return `dm:${currentUserId}:${selectedChat.id}`;
   };
 
@@ -354,6 +350,13 @@ export const ChatMain: React.FC<{
                 onClick={() => setShowSearch(!showSearch)}
                 icon={<Search className="h-4 w-4 text-brand-600" />}
               />
+              {/* NEW: Expand RightPanel button */}
+              <IconButton
+                className="rounded-full bg-white"
+                label={rightExpanded ? "Thu nhỏ panel phải" : "Mở rộng panel phải"}
+                onClick={onToggleRightExpand}
+                icon={<ArrowLeftRight className="h-4 w-4 text-brand-600" />}
+              />
               <IconButton
                 className="rounded-full bg-white"
                 label={showRight ? "Ẩn panel phải" : "Hiện panel phải"}
@@ -461,8 +464,6 @@ export const ChatMain: React.FC<{
         </div>
         <div className="mt-2 flex items-center gap-4 text-gray-600">
           <IconButton label="Đính kèm" icon={<Paperclip className="h-4 w-4" />} />
-          {/* <IconButton label="Hình ảnh" icon={<ImageIcon className="h-4 w-4" />} />
-          <IconButton label="Nhắc giờ" icon={<AlarmClock className="h-4 w-4" />} /> */}
           <IconButton label="Định dạng" icon={<Type className="h-4 w-4" />} />
         </div>
       </div>

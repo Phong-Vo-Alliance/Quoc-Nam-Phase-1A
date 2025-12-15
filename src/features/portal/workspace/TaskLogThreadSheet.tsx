@@ -111,7 +111,7 @@ export const TaskLogThreadSheet: React.FC<TaskLogThreadSheetProps> = ({
 
   return (
     <div className="fixed inset-0 z-[999] flex justify-end bg-black/30">
-      <div className="h-full w-full max-w-[520px] bg-white shadow-2xl border-l border-gray-200 flex flex-col">
+      <div className="h-full w-full max-w-[700px] bg-white shadow-2xl border-l border-gray-200 flex flex-col">
         {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-gray-200 bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3">
