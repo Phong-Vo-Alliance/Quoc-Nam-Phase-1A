@@ -47,7 +47,7 @@
 
 ```
 ┌─────────────────────────────────┐
-│ [←] Avatar Name       [⋮]       │ ← Header (Compact)
+│ [←] Avatar Name    [🔍] [⋮]    │ ← Header (Compact)
 ├─────────────────────────────────┤
 │ [Công việc] [Thông tin] [Nhận] │ ← Work Type Tabs (Mobile-only row)
 ├─────────────────────────────────┤
@@ -100,13 +100,22 @@
     </div>
   </div>
 
-  {/* Right: Menu Button */}
-  <button
-    onClick={onOpenMobileMenu}
-    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-  >
-    <MoreVertical className="w-5 h-5 text-gray-600" />
-  </button>
+  {/* Right: Search + Menu Buttons */}
+  <div className="flex items-center gap-1 flex-shrink-0">
+    <button
+      onClick={onOpenSearch}
+      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <Search className="w-5 h-5 text-gray-600" />
+    </button>
+
+    <button
+      onClick={onOpenMobileMenu}
+      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <MoreVertical className="w-5 h-5 text-gray-600" />
+    </button>
+  </div>
 </div>
 ```
 
@@ -153,6 +162,20 @@
 - Color: Green-600 (#16A34A)
 - Display: Only if online
 
+**Right Button Group**:
+
+- Display: Flex with 4px gap (`gap-1`)
+- Flex: No shrink
+
+**Search Button**:
+
+- Padding: 6px (`p-1.5`)
+- Icon: Search, 20×20px
+- Color: Gray-600 (#4B5563)
+- Hover: Light gray background (#F3F4F6)
+- Border Radius: 8px
+- Tap Target: 32×32px
+
 **Menu Button**:
 
 - Padding: 6px
@@ -160,7 +183,7 @@
 - Color: Gray-600 (#4B5563)
 - Hover: Light gray background
 - Border Radius: 8px
-- Flex: No shrink
+- Tap Target: 32×32px
 
 ### 3.2 Mobile Menu Options
 
@@ -169,10 +192,6 @@
 ```tsx
 <PopoverContent align="end" className="w-56 p-2">
   <div className="space-y-1">
-    <button className="menu-item">
-      <Search className="w-4 h-4" />
-      <span>Tìm trong cuộc trò chuyện</span>
-    </button>
     <button className="menu-item">
       <Archive className="w-4 h-4" />
       <span>Lưu trữ</span>
@@ -187,7 +206,6 @@
 
 **Menu Items**:
 
-- Search in conversation
 - Archive conversation
 - Delete conversation (red text)
 
@@ -330,10 +348,43 @@
     )}
 
     {/* Bubble */}
-    <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2">
-      <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">
-        {message.content}
-      </p>
+    <div
+      className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Text Message */}
+      {message.type === "text" && (
+        <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+          {message.content}
+        </p>
+      )}
+
+      {/* Image Message */}
+      {message.type === "image" && (
+        <img
+          src={message.imageUrl}
+          alt="Image"
+          onClick={() => onViewImage(message.imageUrl)}
+          className="max-w-[240px] rounded-lg cursor-pointer"
+        />
+      )}
+
+      {/* File Message */}
+      {message.type === "file" && (
+        <div
+          onClick={() => onViewFile(message.fileUrl, message.fileName)}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <FileText className="w-5 h-5 text-blue-500" />
+          <div>
+            <p className="text-sm text-gray-900 font-medium">
+              {message.fileName}
+            </p>
+            <p className="text-xs text-gray-500">{message.fileSize}</p>
+          </div>
+        </div>
+      )}
     </div>
 
     {/* Time + Actions */}
@@ -354,8 +405,60 @@
         Nhận
       </button>
     </div>
+
+    {/* Received Status (if received) */}
+    {message.receivedBy && (
+      <div className="flex items-center gap-1 mt-1">
+        <CheckCircle2 className="w-3 h-3 text-green-500" />
+        <span className="text-xs text-green-600">
+          Đã tiếp nhận bởi {message.receivedBy.name} lúc{" "}
+          {formatTime(message.receivedBy.timestamp)}
+        </span>
+      </div>
+    )}
+
+    {/* Received Status (if received) */}
+    {message.receivedBy && (
+      <div className="flex items-center gap-1 mt-1">
+        <CheckCircle2 className="w-3 h-3 text-green-500" />
+        <span className="text-xs text-green-600">
+          Đã tiếp nhận bởi {message.receivedBy.name} lúc{" "}
+          {formatTime(message.receivedBy.timestamp)}
+        </span>
+      </div>
+    )}
   </div>
-</div>
+</div>;
+
+{
+  /* Long Press Context Menu */
+}
+{
+  showContextMenu && (
+    <Popover open={showContextMenu} onOpenChange={setShowContextMenu}>
+      <PopoverContent className="w-48 p-2">
+        <div className="space-y-1">
+          <button className="menu-item">
+            <Reply className="w-4 h-4" />
+            <span>Trả lời</span>
+          </button>
+          <button className="menu-item">
+            <Star className="w-4 h-4 text-orange-500" />
+            <span>Đánh dấu sao</span>
+          </button>
+          <button className="menu-item">
+            <UserPlus className="w-4 h-4 text-blue-500" />
+            <span>Giao task</span>
+          </button>
+          <button className="menu-item">
+            <Download className="w-4 h-4 text-green-500" />
+            <span>Tiếp nhận thông tin</span>
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 ```
 
 **Styling Details**:
@@ -386,13 +489,32 @@
 - Border Radius: 16px (`rounded-2xl`)
 - Top-Left Corner: 2px (`rounded-tl-sm`) for chat tail effect
 - Padding: 12px horizontal, 8px vertical
+- Long Press: Hold 500ms to open context menu
 
-**Message Text**:
+**Message Types**:
+
+**Text Message**:
 
 - Font: 14px (`text-sm`)
 - Color: Gray-900 (#111827)
 - Whitespace: Pre-wrap (preserves line breaks)
 - Word Break: Break long words
+
+**Image Message**:
+
+- Max Width: 240px
+- Border Radius: 8px (`rounded-lg`)
+- Cursor: Pointer (tap to view)
+- Tap Action: Opens full-screen image viewer
+
+**File Message**:
+
+- Display: Flex with 8px gap
+- Icon: FileText, 20×20px, blue-500
+- File Name: 14px, gray-900, medium weight
+- File Size: 12px, gray-500
+- Cursor: Pointer (tap to view/download)
+- Tap Action: Opens file viewer or downloads
 
 **Actions Row**:
 
@@ -412,6 +534,52 @@
 - Hover: Orange-500 (pin), Blue-500 (receive)
 - No background or border
 
+**Received Status** (if message received):
+
+- Display: Flex with 4px gap
+- Margin: 4px top
+- Alignment: Center
+- Icon: CheckCircle2, 12×12px, green-500
+- Text: 12px, green-600
+- Format: "Đã tiếp nhận bởi [username] lúc [timestamp]"
+
+**Long Press Context Menu**:
+
+- Width: 192px (`w-48`)
+- Padding: 8px (`p-2`)
+- Background: White
+- Shadow: Default popover shadow
+- Border Radius: 12px
+
+**Menu Items**:
+
+- Display: Flex with 8px gap
+- Padding: 8px horizontal, 6px vertical
+- Font: 14px
+- Hover: Light gray background (#F3F4F6)
+- Border Radius: 6px
+
+**Menu Options**:
+
+1. **Trả lời** (Reply)
+
+   - Icon: Reply, gray
+   - Action: Opens reply composer
+
+2. **Đánh dấu sao** (Star/Pin)
+
+   - Icon: Star, orange-500
+   - Action: Pins message
+
+3. **Giao task** (Assign Task)
+
+   - Icon: UserPlus, blue-500
+   - Action: Opens AssignTaskSheet
+
+4. **Tiếp nhận thông tin** (Receive Info)
+   - Icon: Download, green-500
+   - Action: Opens GroupTransferSheet
+
 ### 5.3 Message Bubble (Mine)
 
 **Structure**:
@@ -421,10 +589,41 @@
   {/* Message Content */}
   <div className="ml-auto">
     {/* Bubble */}
-    <div className="bg-brand-500 rounded-2xl rounded-tr-sm px-3 py-2">
-      <p className="text-sm text-white whitespace-pre-wrap break-words">
-        {message.content}
-      </p>
+    <div
+      className="bg-brand-500 rounded-2xl rounded-tr-sm px-3 py-2"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Text Message */}
+      {message.type === "text" && (
+        <p className="text-sm text-white whitespace-pre-wrap break-words">
+          {message.content}
+        </p>
+      )}
+
+      {/* Image Message */}
+      {message.type === "image" && (
+        <img
+          src={message.imageUrl}
+          alt="Image"
+          onClick={() => onViewImage(message.imageUrl)}
+          className="max-w-[240px] rounded-lg cursor-pointer"
+        />
+      )}
+
+      {/* File Message */}
+      {message.type === "file" && (
+        <div
+          onClick={() => onViewFile(message.fileUrl, message.fileName)}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <FileText className="w-5 h-5 text-white" />
+          <div>
+            <p className="text-sm text-white font-medium">{message.fileName}</p>
+            <p className="text-xs text-blue-100">{message.fileSize}</p>
+          </div>
+        </div>
+      )}
     </div>
 
     {/* Time + Status */}
@@ -440,8 +639,64 @@
         <CheckCheck className="w-3 h-3 text-blue-500" />
       )}
     </div>
+
+    {/* Received Status (if received) */}
+    {message.receivedBy && (
+      <div className="flex items-center gap-1 mt-1 justify-end">
+        <CheckCircle2 className="w-3 h-3 text-green-500" />
+        <span className="text-xs text-green-600">
+          Đã tiếp nhận bởi {message.receivedBy.name} lúc{" "}
+          {formatTime(message.receivedBy.timestamp)}
+        </span>
+      </div>
+    )}
+
+    {/* Received Status (if received) */}
+    {message.receivedBy && (
+      <div className="flex items-center gap-1 mt-1 justify-end">
+        <CheckCircle2 className="w-3 h-3 text-green-500" />
+        <span className="text-xs text-green-600">
+          Đã tiếp nhận bởi {message.receivedBy.name} lúc{" "}
+          {formatTime(message.receivedBy.timestamp)}
+        </span>
+      </div>
+    )}
   </div>
-</div>
+</div>;
+
+{
+  /* Long Press Context Menu */
+}
+{
+  showContextMenu && (
+    <Popover open={showContextMenu} onOpenChange={setShowContextMenu}>
+      <PopoverContent className="w-48 p-2">
+        <div className="space-y-1">
+          <button className="menu-item">
+            <Reply className="w-4 h-4" />
+            <span>Trả lời</span>
+          </button>
+          <button className="menu-item">
+            <Star className="w-4 h-4 text-orange-500" />
+            <span>Đánh dấu sao</span>
+          </button>
+          <button className="menu-item">
+            <UserPlus className="w-4 h-4 text-blue-500" />
+            <span>Giao task</span>
+          </button>
+          <button className="menu-item">
+            <Download className="w-4 h-4 text-green-500" />
+            <span>Tiếp nhận thông tin</span>
+          </button>
+          <button className="menu-item text-red-600">
+            <Trash2 className="w-4 h-4" />
+            <span>Xóa tin nhắn</span>
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 ```
 
 **Styling Details**:
@@ -458,13 +713,32 @@
 - Border Radius: 16px
 - Top-Right Corner: 2px for chat tail effect
 - Padding: 12px horizontal, 8px vertical
+- Long Press: Hold 500ms to open context menu
 
-**Message Text**:
+**Message Types**:
+
+**Text Message**:
 
 - Font: 14px
 - Color: White
 - Whitespace: Pre-wrap
 - Word Break: Break long words
+
+**Image Message**:
+
+- Max Width: 240px
+- Border Radius: 8px (`rounded-lg`)
+- Cursor: Pointer (tap to view)
+- Tap Action: Opens full-screen image viewer
+
+**File Message**:
+
+- Display: Flex with 8px gap
+- Icon: FileText, 20×20px, white
+- File Name: 14px, white, medium weight
+- File Size: 12px, blue-100
+- Cursor: Pointer (tap to view/download)
+- Tap Action: Opens file viewer or downloads
 
 **Status Row**:
 
@@ -483,6 +757,50 @@
 - Delivered: Double check, gray
 - Read: Double check, blue
 - Size: 12×12px (`w-3 h-3`)
+
+**Received Status** (if message received):
+
+- Display: Flex with 4px gap
+- Margin: 4px top
+- Justify: End (right-aligned)
+- Icon: CheckCircle2, 12×12px, green-500
+- Text: 12px, green-600
+- Format: "Đã tiếp nhận bởi [username] lúc [timestamp]"
+
+**Long Press Context Menu** (My Messages):
+
+- Width: 192px (`w-48`)
+- Padding: 8px (`p-2`)
+- Background: White
+- Shadow: Default popover shadow
+- Border Radius: 12px
+
+**Menu Options** (Own Messages):
+
+1. **Trả lời** (Reply)
+
+   - Icon: Reply, gray
+   - Action: Opens reply composer
+
+2. **Đánh dấu sao** (Star/Pin)
+
+   - Icon: Star, orange-500
+   - Action: Pins message
+
+3. **Giao task** (Assign Task)
+
+   - Icon: UserPlus, blue-500
+   - Action: Opens AssignTaskSheet
+
+4. **Tiếp nhận thông tin** (Receive Info)
+
+   - Icon: Download, green-500
+   - Action: Opens GroupTransferSheet
+
+5. **Xóa tin nhắn** (Delete Message)
+   - Icon: Trash2, red
+   - Text Color: Red-600
+   - Action: Deletes own message
 
 ### 5.4 Work Type Badge on Message
 
@@ -714,17 +1032,44 @@ const handlePinMessage = async (message: Message) => {
 **Flow**:
 
 ```
-Message → Tap "Nhận" → Sheet Opens → Select Group → Confirm → Info Received
+Message → Tap "Nhận" → Sheet Opens → Select Group → Confirm → Info Received → Status Displayed
 ```
 
 **Code**:
 
 ```tsx
-const handleReceiveInfo = (message: Message) => {
+const handleReceiveInfo = async (message: Message) => {
   setSelectedMessageForReceive(message);
   setShowGroupTransferSheet(true);
 };
+
+const onConfirmReceive = async (targetGroup: string) => {
+  try {
+    await receiveInfo(message.id, targetGroup);
+
+    // Update message with received status
+    updateMessage(message.id, {
+      receivedBy: {
+        name: currentUser.name,
+        userId: currentUser.id,
+        timestamp: new Date(),
+      },
+    });
+
+    toast.success("Đã tiếp nhận thông tin");
+  } catch (error) {
+    toast.error("Không thể tiếp nhận thông tin");
+  }
+};
 ```
+
+**Visual Feedback**:
+
+- Toast notification: "Đã tiếp nhận thông tin"
+- Green status line appears below message
+- Icon: CheckCircle2 (green)
+- Text: "Đã tiếp nhận bởi [username] lúc [timestamp]"
+- Info added to target group's received list
 
 **Sheet**: GroupTransferSheet opens with cascading selects
 **Related**: [04-bottom-sheets.md](./04-bottom-sheets.md#grouptransfersheet)
@@ -796,6 +1141,7 @@ const handleLongPress = (message: Message, e: React.TouchEvent) => {
 
 - Sent/Delivered: Gray-400
 - Read: Blue-500
+- Received: Green-500/Green-600
 
 **Backgrounds**:
 

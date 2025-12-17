@@ -10,12 +10,11 @@
 2. [Screen Structure](#screen-structure)
 3. [Header Section](#header-section)
 4. [Tab Switcher](#tab-switcher)
-5. [Tools Menu](#tools-menu)
-6. [Conversation List](#conversation-list)
-7. [Styling Details](#styling-details)
-8. [Interactions](#interactions)
-9. [Navigation](#navigation)
-10. [Testing Checklist](#testing-checklist)
+5. [Conversation List](#conversation-list)
+6. [Styling Details](#styling-details)
+7. [Interactions](#interactions)
+8. [Navigation](#navigation)
+9. [Testing Checklist](#testing-checklist)
 
 ---
 
@@ -46,7 +45,9 @@
 
 ```
 ┌─────────────────────────────────┐
-│ [🔍 Search Box]        [⋮ Menu] │ ← Header
+│ [🔍 Search Box]                 │ ← Search
+├─────────────────────────────────┤
+│ Tin nhắn               [⋮ Menu] │ ← Header (Title + Menu)
 ├─────────────────────────────────┤
 │ [ Nhóm ]  [ Cá nhân ]           │ ← Tab Switcher
 ├─────────────────────────────────┤
@@ -82,7 +83,7 @@
     <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
     <input
       type="text"
-      placeholder="Tìm kiếm tin nhắn hoặc công việc..."
+      placeholder="Tìm kiếm"
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
       className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg 
@@ -115,33 +116,142 @@
   - Color: #9CA3AF (`text-gray-400`)
   - Vertical align: Centered with `-translate-y-1/2`
 
-**Placeholder Text**: "Tìm kiếm tin nhắn hoặc công việc..." (gray-400)
+**Placeholder Text**: "Tìm kiếm" (gray-400)
 
-### 3.2 Tools Menu Button
-
-**Location**: Top-right corner of header
+### 3.2 Title and Menu
 
 **Structure**:
 
 ```tsx
-<Popover>
-  <PopoverTrigger asChild>
-    <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-      <MoreVertical className="w-5 h-5 text-gray-600" />
-    </button>
-  </PopoverTrigger>
-  <PopoverContent align="end" className="w-56 p-2">
-    {/* Menu items */}
-  </PopoverContent>
-</Popover>
+<div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+  <h1 className="text-lg font-semibold text-gray-900">Tin nhắn</h1>
+  <Popover>
+    <PopoverTrigger asChild>
+      <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+        <MoreVertical className="w-5 h-5 text-gray-600" />
+      </button>
+    </PopoverTrigger>
+    <PopoverContent align="end" className="w-56 p-2">
+      {/* Menu items */}
+    </PopoverContent>
+  </Popover>
+</div>
 ```
 
-**Button Styling**:
+**Styling Details**:
 
-- Padding: 6px (`p-1.5`)
-- Hover: Light gray background (#F3F4F6)
-- Border Radius: 8px
-- Icon: 20×20px, gray-600 color
+- **Container**: `flex items-center justify-between px-4 py-3 border-b border-gray-200`
+
+  - Display: Flex with space-between
+  - Padding: 16px horizontal, 12px vertical
+  - Bottom border: 1px solid #E5E7EB
+  - Alignment: Vertically centered
+
+- **Title**:
+
+  - Text: "Tin nhắn" (Messages)
+  - Font: 18px (`text-lg`), semibold weight
+  - Color: Gray-900 (#111827)
+
+- **Menu Button**:
+  - Padding: 6px (`p-1.5`)
+  - Hover: Light gray background (#F3F4F6)
+  - Border Radius: 8px
+  - Icon: 20×20px, gray-600 color
+
+### 3.3 Tools Menu (Popover)
+
+**Popover Menu Items Structure**:
+
+```tsx
+<PopoverContent align="end" className="w-56 p-2">
+  <div className="space-y-1">
+    <button
+      onClick={() => setActiveSheet("quick-message")}
+      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left
+                 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <Zap className="w-4 h-4 text-yellow-500" />
+      <span className="text-gray-700">Tin nhắn nhanh</span>
+    </button>
+
+    <button
+      onClick={() => setActiveSheet("pinned-messages")}
+      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left
+                 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <Star className="w-4 h-4 text-orange-500" />
+      <span className="text-gray-700">Tin đánh dấu</span>
+    </button>
+
+    <button
+      onClick={() => setActiveSheet("todo-list")}
+      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left
+                 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <ListTodo className="w-4 h-4 text-blue-500" />
+      <span className="text-gray-700">Việc cần làm</span>
+    </button>
+  </div>
+</PopoverContent>
+```
+
+**Styling Details**:
+
+**Popover Container**:
+
+- Width: 224px (`w-56`)
+- Padding: 8px (`p-2`)
+- Alignment: End (right-aligned)
+- Shadow: Default popover shadow
+- Border Radius: 12px
+
+**Menu Items**:
+
+- **Container**: `w-full flex items-center gap-3`
+
+  - Width: 100%
+  - Display: Flex with 12px gap
+  - Alignment: Vertically centered
+
+- **Padding**: `px-3 py-2` (12px horizontal, 8px vertical)
+- **Font**: 14px (`text-sm`)
+- **Text Alignment**: Left
+- **Hover**: Light gray background (#F3F4F6)
+- **Border Radius**: 8px
+- **Transition**: Colors, smooth
+
+**Icons**:
+
+- Size: 16×16px (`w-4 h-4`)
+- Colors:
+  - Zap (Quick Message): Yellow-500 (#EAB308)
+  - Star (Pinned): Orange-500 (#F97316)
+  - ListTodo (Todo): Blue-500 (#3B82F6)
+
+**Text Labels**:
+
+- Color: Gray-700 (#374151)
+- Font: 14px, regular weight
+
+**Menu Items**:
+
+1. **Tin nhắn nhanh** (Quick Messages)
+
+   - Icon: Zap (yellow)
+   - Action: Opens QuickMessageManager sheet
+   - Purpose: Send templated quick messages
+
+2. **Tin đánh dấu** (Pinned Messages)
+
+   - Icon: Star (orange)
+   - Action: Opens PinnedMessagesPanel sheet
+   - Purpose: View all pinned/starred messages
+
+3. **Việc cần làm** (Todo List)
+   - Icon: ListTodo (blue)
+   - Action: Opens TodoListManager sheet
+   - Purpose: Manage personal todo list
 
 ---
 
@@ -219,107 +329,9 @@
 
 ---
 
-## 5. Tools Menu
+## 5. Conversation List
 
-### 5.1 Popover Menu Items
-
-**Structure**:
-
-```tsx
-<PopoverContent align="end" className="w-56 p-2">
-  <div className="space-y-1">
-    <button
-      onClick={() => setActiveSheet("quick-message")}
-      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left
-                 hover:bg-gray-100 rounded-lg transition-colors"
-    >
-      <Zap className="w-4 h-4 text-yellow-500" />
-      <span className="text-gray-700">Tin nhắn nhanh</span>
-    </button>
-
-    <button
-      onClick={() => setActiveSheet("pinned-messages")}
-      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left
-                 hover:bg-gray-100 rounded-lg transition-colors"
-    >
-      <Star className="w-4 h-4 text-orange-500" />
-      <span className="text-gray-700">Tin đánh dấu</span>
-    </button>
-
-    <button
-      onClick={() => setActiveSheet("todo-list")}
-      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left
-                 hover:bg-gray-100 rounded-lg transition-colors"
-    >
-      <ListTodo className="w-4 h-4 text-blue-500" />
-      <span className="text-gray-700">Việc cần làm</span>
-    </button>
-  </div>
-</PopoverContent>
-```
-
-**Styling Details**:
-
-**Popover Container**:
-
-- Width: 224px (`w-56`)
-- Padding: 8px (`p-2`)
-- Alignment: End (right-aligned)
-- Shadow: Default popover shadow
-- Border Radius: 12px
-
-**Menu Items**:
-
-- **Container**: `w-full flex items-center gap-3`
-
-  - Width: 100%
-  - Display: Flex with 12px gap
-  - Alignment: Vertically centered
-
-- **Padding**: `px-3 py-2` (12px horizontal, 8px vertical)
-- **Font**: 14px (`text-sm`)
-- **Text Alignment**: Left
-- **Hover**: Light gray background (#F3F4F6)
-- **Border Radius**: 8px
-- **Transition**: Colors, smooth
-
-**Icons**:
-
-- Size: 16×16px (`w-4 h-4`)
-- Colors:
-  - Zap (Quick Message): Yellow-500 (#EAB308)
-  - Star (Pinned): Orange-500 (#F97316)
-  - ListTodo (Todo): Blue-500 (#3B82F6)
-
-**Text Labels**:
-
-- Color: Gray-700 (#374151)
-- Font: 14px, regular weight
-
-### 5.2 Menu Items
-
-1. **Tin nhắn nhanh** (Quick Messages)
-
-   - Icon: Zap (yellow)
-   - Action: Opens QuickMessageManager sheet
-   - Purpose: Send templated quick messages
-
-2. **Tin đánh dấu** (Pinned Messages)
-
-   - Icon: Star (orange)
-   - Action: Opens PinnedMessagesPanel sheet
-   - Purpose: View all pinned/starred messages
-
-3. **Việc cần làm** (Todo List)
-   - Icon: ListTodo (blue)
-   - Action: Opens TodoListManager sheet
-   - Purpose: Manage personal todo list
-
----
-
-## 6. Conversation List
-
-### 6.1 List Container
+### 5.1 List Container
 
 **Structure**:
 
@@ -468,9 +480,9 @@
 
 ---
 
-## 7. Styling Details
+## 6. Styling Details
 
-### 7.1 Colors
+### 6.1 Colors
 
 **Gradient (Tab Switcher)**:
 
@@ -504,7 +516,7 @@
 - Pinned: Orange-500 (#F97316)
 - Todo: Blue-500 (#3B82F6)
 
-### 7.2 Typography
+### 6.2 Typography
 
 **Font Sizes**:
 
@@ -522,12 +534,13 @@
 - Default: 1.5 (Tailwind default)
 - Truncate: 1 line with ellipsis
 
-### 7.3 Spacing
+### 6.3 Spacing
 
 **Padding**:
 
-- Header: 12px horizontal, 10px vertical
+- Search Container: 12px horizontal, 10px vertical
 - Search Input: 32px left, 12px right, 6px vertical
+- Header (Title + Menu): 16px horizontal, 12px vertical
 - Tab Items: 24px horizontal, 6px vertical
 - Conversation Items: 12px all sides
 - Menu Items: 12px horizontal, 8px vertical
@@ -544,7 +557,7 @@
 - Time: 8px left
 - Badge: 8px left
 
-### 7.4 Borders & Shadows
+### 6.4 Borders & Shadows
 
 **Border Radius**:
 
@@ -564,7 +577,7 @@
 - Active Tab: Small shadow (`shadow-sm`)
 - Popover: Default popover shadow
 
-### 7.5 Animations
+### 6.5 Animations
 
 **Transitions**:
 
@@ -578,9 +591,9 @@
 
 ---
 
-## 8. Interactions
+## 7. Interactions
 
-### 8.1 Search
+### 7.1 Search
 
 **Interaction**:
 
@@ -613,7 +626,7 @@ const filteredConversations = useMemo(() => {
 - Last message content
 - Case-insensitive matching
 
-### 8.2 Tab Switching
+### 7.2 Tab Switching
 
 **Interaction**:
 
@@ -641,7 +654,7 @@ const filteredByTab = useMemo(() => {
 - Easing: Ease-in-out
 - Properties: Background, text color, shadow
 
-### 8.3 Conversation Selection
+### 7.3 Conversation Selection
 
 **Interaction**:
 
@@ -669,7 +682,7 @@ const handleSelectChat = (conversation: Conversation) => {
 - Selected: Brand-50 background
 - Transition: 150ms background color
 
-### 8.4 Tools Menu
+### 7.4 Tools Menu
 
 **Interaction**:
 
@@ -705,9 +718,9 @@ const openTodoList = () => {
 
 ---
 
-## 9. Navigation
+## 8. Navigation
 
-### 9.1 To Chat Screen
+### 8.1 To Chat Screen
 
 **Trigger**: Tap conversation item
 
@@ -733,7 +746,7 @@ const handleMobileSelectChat = (chat: Chat) => {
 
 **Related Docs**: [02-mobile-chat-main.md](./02-mobile-chat-main.md)
 
-### 9.2 To Bottom Sheets
+### 8.2 To Bottom Sheets
 
 **Trigger**: Tap tools menu item
 
@@ -755,7 +768,7 @@ Conversation List Screen
 
 **Related Docs**: [04-bottom-sheets.md](./04-bottom-sheets.md)
 
-### 9.3 From Chat Screen
+### 8.3 From Chat Screen
 
 **Trigger**: Tap back button in ChatMain
 
@@ -787,9 +800,9 @@ const handleBackToList = () => {
 
 ---
 
-## 10. Testing Checklist
+## 9. Testing Checklist
 
-### 10.1 Visual Testing
+### 9.1 Visual Testing
 
 - [ ] Search box displays correctly with icon
 - [ ] Gradient tabs render with proper colors
@@ -805,7 +818,7 @@ const handleBackToList = () => {
 - [ ] Dividers between conversation items
 - [ ] Proper spacing and padding
 
-### 10.2 Interaction Testing
+### 9.2 Interaction Testing
 
 - [ ] Search input accepts text
 - [ ] Search filters conversations in real-time
@@ -821,7 +834,7 @@ const handleBackToList = () => {
 - [ ] Scroll works smoothly
 - [ ] Pull-to-refresh works (if implemented)
 
-### 10.3 State Testing
+### 9.3 State Testing
 
 - [ ] Empty state when no conversations
 - [ ] Loading state while fetching
@@ -832,7 +845,7 @@ const handleBackToList = () => {
 - [ ] Last message updates when new message arrives
 - [ ] Time updates (e.g., "Just now" → "1m ago")
 
-### 10.4 Navigation Testing
+### 9.4 Navigation Testing
 
 - [ ] Tap conversation opens ChatMain
 - [ ] Bottom nav hides when chat opens
@@ -842,7 +855,7 @@ const handleBackToList = () => {
 - [ ] Sheet close returns to list
 - [ ] Deep link to conversation works
 
-### 10.5 Responsive Testing
+### 9.5 Responsive Testing
 
 - [ ] Adapts to different mobile screen sizes
 - [ ] Works on 320px width (small phones)
@@ -851,7 +864,7 @@ const handleBackToList = () => {
 - [ ] Keyboard doesn't hide content
 - [ ] Safe area insets respected
 
-### 10.6 Performance Testing
+### 9.6 Performance Testing
 
 - [ ] List scrolls at 60fps
 - [ ] Search debounced (doesn't lag)
@@ -869,7 +882,7 @@ const handleBackToList = () => {
 - [ ] Screen reader announces selections
 - [ ] Color contrast meets WCAG AA
 
-### 10.8 Edge Cases
+### 9.8 Edge Cases
 
 - [ ] Very long conversation names truncate
 - [ ] Very long last messages truncate
