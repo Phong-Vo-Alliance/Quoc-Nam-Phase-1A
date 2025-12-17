@@ -1003,6 +1003,7 @@ const handleOpenSourceMessage = React.useCallback(
           ]}
 
           showPinnedToast={showPinnedToast}
+          currentUserName={currentUser}
         />
       )}
       

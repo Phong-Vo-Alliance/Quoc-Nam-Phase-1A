@@ -226,6 +226,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     "messages"
   );
 
+  const [rightExpanded, setRightExpanded] = React.useState(false);
+
   // Khi chọn chat từ danh sách tin nhắn, giữ nguyên tab "messages" và hiển thị nội dung chat trong vùng nội dung chính
   const handleMobileSelectChat = (target: ChatTarget) => {
     onSelectChat(target);
@@ -264,7 +266,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     return new Date().toISOString();
   };
 
-    if (isMobile) {
+  if (isMobile) {
     return (      
       <div className={`relative flex h-full flex-col bg-gray-50 ${mobileTab === "messages" && selectedChat ? "pb-0" : "pb-12"}`}>
         {/* Content theo tab */}
@@ -385,88 +387,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
             </div>
           )}
 
-          {/* TAB 2: CHAT */}
-          {/* {mobileTab === "chat" && (
-            <div className="h-full min-h-0">
-              <ChatMain
-                selectedGroup={selectedGroup as any}
-                isMobile={true}
-                onBack={() => setMobileTab("home")}
-                // messages & state
-                messages={messages}
-                setMessages={setMessages}
-                myWork={[]}
-                showRight={showRight}
-                setShowRight={setShowRight}
-                showSearch={showSearch}
-                setShowSearch={setShowSearch}
-                q={q}
-                setQ={setQ}
-                searchInputRef={searchInputRef}
-                onOpenCloseModalFor={() => { }}
-                openPreview={openPreview}
-                // Pin message → dùng chung logic đang có
-                onTogglePin={(msg) => {
-                  setPinnedMessages((prev) => {
-                    const exists = prev.some((p) => p.id === msg.id);
-
-                    // Nếu đã pin → bỏ pin
-                    if (exists) {
-                      return prev.filter((p) => p.id !== msg.id);
-                    }
-
-                    // Nếu chưa pin → thêm mới
-                    const pinnedType =
-                      msg.type === "image" || msg.files?.[0]?.type === "image"
-                        ? "image"
-                        : (msg.fileInfo?.type || msg.files?.[0]?.type)
-                          ? "file"
-                          : "text";
-
-                    return [
-                      ...prev,
-                      {
-                        id: msg.id,
-                        chatId: msg.groupId,
-                        groupName: selectedGroup?.name ?? "",
-                        workTypeName:
-                          selectedGroup?.workTypes?.find(
-                            (w) => w.id === selectedWorkTypeId
-                          )?.name ?? "",
-                        sender: msg.sender,
-                        type: pinnedType,
-                        content:
-                          msg.type === "text" ? msg.content : undefined,
-                        preview:
-                          msg.type === "text"
-                            ? msg.content?.slice(0, 100)
-                            : "[Đính kèm]",
-                        fileInfo: msg.fileInfo ?? msg.files?.[0] ?? undefined,
-                        time: resolvePinnedTime(msg),
-                      },
-                    ];
-                  });
-                }}
-                // tiêu đề / context
-                title={chatTitle}
-                currentWorkTypeId={selectedWorkTypeId}
-                workTypes={workTypes}
-                onChangeWorkType={onChangeWorkType}
-                currentUserId={currentUserId}
-                currentUserName={currentUserName}
-                selectedChat={selectedChat}
-                // info / task log
-                onReceiveInfo={onReceiveInfo}
-                onAssignFromMessage={onAssignFromMessage}
-                setTab={setTab}
-                receivedInfos={receivedInfos}
-                viewMode={viewMode}
-                onOpenTaskLog={onOpenTaskLog}
-                taskLogs={taskLogs}
-              />
-            </div>
-          )} */}
-
           {/* TAB 3: WORK = RightPanel full screen */}
           {mobileTab === "work" && (
             <div className="h-full min-h-0 overflow-hidden flex flex-col">
@@ -555,12 +475,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     );
   }
 
+  // Desktop layout with expansion-aware grid
+  const desktopGridCols =
+    showRight
+      ? (rightExpanded ? "grid-cols-[360px,660px,1fr]" : "grid-cols-[360px,1fr,360px]")
+      : ("grid-cols-[360px,1fr]");
+
   return (
     <div
-      className={`grid h-full min-h-0 gap-3 p-3 transition-all duration-300 ${showRight
-          ? "grid-cols-[360px,1fr,360px]" // có panel phải
-          : "grid-cols-[360px,1fr]"       // ẩn panel phải -> chỉ còn 2 cột
-        }`}
+      className={`grid h-full min-h-0 gap-3 p-3 transition-all duration-300 ${desktopGridCols}`}
     >
 
       {/* CỘT TRÁI */}
@@ -652,11 +575,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
             });
           }}
 
-
-          // NEW:
-          //currentUserId={"u_diem_chi"}  // hoặc lấy từ context đăng nhập
-          //currentUserName={"Diễm Chi"}
-          //selectedChat={selectedChat}
           currentWorkTypeId={selectedWorkTypeId}
           title={chatTitle}
 
@@ -677,6 +595,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
 
           onOpenTaskLog={onOpenTaskLog}
           taskLogs={taskLogs}
+
+          rightExpanded={rightExpanded}
+          onToggleRightExpand={() => setRightExpanded((v) => !v)}
         />
       </div>
 
