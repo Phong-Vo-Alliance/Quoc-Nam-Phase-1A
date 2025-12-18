@@ -86,8 +86,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [showOverlay, setShowOverlay] = React.useState(false);
   const previewRef = React.useRef<HTMLDivElement | null>(null);
   const menuRef = React.useRef<HTMLDivElement | null>(null);
-  const [menuBottom, setMenuBottom] = React.useState<number>(24);
-  const [previewBottom, setPreviewBottom] = React.useState<number>(120);
+  const [menuBottom, setMenuBottom] = React.useState<number>(124);
+  const [previewBottom, setPreviewBottom] = React.useState<number>(180);
 
   // Only enable long-press on mobile layout
   const longPressBind = isMobileLayout
@@ -109,9 +109,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     const measure = () => {
       const mh = menuRef.current?.getBoundingClientRect().height ?? 0;
       const ph = previewRef.current?.getBoundingClientRect().height ?? 0;
-      const safe = 16; // small safe bottom gap; could be tuned
-      const mBottom = 24 + safe; // distance from bottom for the menu card
-      const pBottom = mBottom + mh + 12; // preview just above the menu
+      const safe = 264; // small safe bottom gap; could be tuned
+      const mBottom = 124 + safe; // distance from bottom for the menu card
+      const pBottom = mBottom + mh + 10; // preview just above the menu
       setMenuBottom(mBottom);
       setPreviewBottom(pBottom);
     };
@@ -335,7 +335,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
             >
               <button className="p-1.5 text-gray-500 hover:text-brand-600 transition" onClick={() => onReply?.(data)} title="Trả lời tin nhắn">
-                <Reply size={14} />
+                <Reply size={14} className="text-indigo-600" />
               </button>
               {!disableExtraActions && (
                 <button
@@ -346,7 +346,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   {data.isPinned ? <StarOff size={14} /> : <Star size={14} />}
                 </button>
               )}
-              {!data.taskId && (
+              {!data.taskId && viewMode === "lead" && (
                 <button title="Giao Task" className="p-1 hover:bg-brand-50 rounded" onClick={() => onAssignFromMessage?.(data)}>
                   <ClipboardPlus className="w-4 h-4 text-brand-600" />
                 </button>
@@ -411,21 +411,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   <span className="text-[12px] text-gray-800">Trả lời</span>
                 </button>
 
-                <button
-                  className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 hover:bg-brand-50 transition"
-                  onClick={() => { setShowOverlay(false); onAssignFromMessage?.(data); }}
-                >
-                  <ClipboardPlus className="h-5 w-5 text-sky-600" />
-                  <span className="text-[12px] text-gray-800">Giao task</span>
-                </button>
+                {!data.taskId &&viewMode === "lead" && (
+                  <button
+                    className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 hover:bg-brand-50 transition"
+                    onClick={() => { setShowOverlay(false); onAssignFromMessage?.(data); }}
+                  >
+                    <ClipboardPlus className="h-5 w-5 text-sky-600" />
+                    <span className="text-[12px] text-gray-800">Giao task</span>
+                  </button>
+                )}                
 
                 {!disableExtraActions && (
                   <button
                     className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 hover:bg-brand-50 transition"
                     onClick={() => { setShowOverlay(false); onPin?.(data); }}
                   >
-                    <Pin className="h-5 w-5 text-amber-600" />
-                    <span className="text-[12px] text-gray-800">{data.isPinned ? "Bỏ ghim" : "Ghim"}</span>
+                    {/* <Pin className="h-5 w-5 text-amber-600" /> */}
+                    {data.isPinned ? <StarOff size={20} /> : <Star size={20} className="text-amber-600" />}
+                    <span className="text-[12px] text-gray-800">{data.isPinned ? "Bỏ đánh dấu" : "Đánh dấu"}</span>
                   </button>
                 )}
 
@@ -450,14 +453,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
               </div>
 
-              <div className="mt-2 text-right">
+              {/* <div className="mt-2 text-right">
                 <button
                   className="text-xs text-gray-500 hover:text-brand-700 hover:underline"
                   onClick={() => setShowOverlay(false)}
                 >
                   Đóng
                 </button>
-              </div>
+              </div> */}
             </div>
 
             <style>
