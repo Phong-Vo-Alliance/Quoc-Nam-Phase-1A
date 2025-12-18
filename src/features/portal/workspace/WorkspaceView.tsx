@@ -15,37 +15,16 @@ import type {
   ChecklistTemplateItem,
   TaskLogMessage,
 } from "../types";
-import { MessageSquareIcon, ClipboardListIcon, UserIcon } from "lucide-react";
-// function scrollToMessage(id: number | string) {
-//   const el = document.getElementById(`msg-${id}`);
-//   if (el) {
-//     // Cuộn đến giữa màn hình
-//     el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-//     // Thêm lớp highlight
-//     el.classList.add("pinned-highlight");
-
-//     // Gỡ lớp highlight sau 2 giây
-//     setTimeout(() => {
-//       el.classList.remove("pinned-highlight");
-//     }, 2000);
-//   }
-// }
+import {
+  MessageSquareIcon,
+  ClipboardListIcon,
+  UserIcon,
+} from "lucide-react";
 
 type ChatTarget = { type: "group" | "dm"; id: string };
 
 interface WorkspaceViewProps {
-  // NEW: dữ liệu & chọn hội thoại
   groups: GroupChat[];
-
-  // selectedGroup: {
-  //   id: string;
-  //   name: string;
-  //   lastSender?: string;
-  //   lastMessage?: string;
-  //   lastTime?: string;
-  //   unreadCount?: number;
-  // } | null;
   selectedGroup?: GroupChat;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -60,10 +39,8 @@ interface WorkspaceViewProps {
     lastTime?: string;
     unreadCount?: number;
   }>;
-  // selectedChat: ChatTarget | null;
   onSelectChat: (t: ChatTarget) => void;
 
-  // Giữ nguyên các prop cũ để không vỡ layout/logic hiện tại
   leftTab: "contacts" | "messages";
   setLeftTab: (v: "contacts" | "messages") => void;
 
@@ -94,40 +71,35 @@ interface WorkspaceViewProps {
   searchInputRef: React.RefObject<HTMLInputElement | null>;
 
   openPreview: (file: FileAttachment) => void;
-  
+
   tab: "info" | "order" | "tasks";
-  setTab: (v: "info" | "order" | "tasks") => void;  
+  setTab: (v: "info" | "order" | "tasks") => void;
   tasks: Task[];
   groupMembers: Array<{ id: string; name: string; role?: "Leader" | "Member" }>;
   onChangeTaskStatus: (id: string, nextStatus: Task["status"]) => void;
   onToggleChecklist: (taskId: string, itemId: string, done: boolean) => void;
   onUpdateTaskChecklist: (taskId: string, next: ChecklistItem[]) => void;
   applyTemplateToTasks?: (workTypeId: string, template: ChecklistTemplateItem[]) => void;
-  checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>; // workTypeId -> variantId -> template
+  checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
   setChecklistTemplates: React.Dispatch<React.SetStateAction<Record<string, Record<string, ChecklistTemplateItem[]>>>>;
-
-  // mode: "CSKH" | "THUMUA";
-  // setMode: (v: "CSKH" | "THUMUA") => void;
 
   workspaceMode: "default" | "pinned";
   setWorkspaceMode: (v: "default" | "pinned") => void;
   pinnedMessages?: PinnedMessage[];
   onClosePinned?: () => void;
   onOpenPinnedMessage?: (pin: PinnedMessage) => void;
-  setPinnedMessages: React.Dispatch<React.SetStateAction<PinnedMessage[]>>;  
+  setPinnedMessages: React.Dispatch<React.SetStateAction<PinnedMessage[]>>;
   onUnpinMessage: (id: string) => void;
   onShowPinnedToast: () => void;
 
   viewMode: "lead" | "staff";
 
-  // WorkType segmented control
   workTypes: Array<{ id: string; name: string }>;
   selectedWorkTypeId: string;
   onChangeWorkType: (id: string) => void;
 
-  // NEW: current user + selected chat
   currentUserId: string;
-  currentUserName: string;  
+  currentUserName: string;
   currentUserDepartment?: string;
   onLogout?: () => void;
   selectedChat: ChatTarget | null;
@@ -143,10 +115,8 @@ interface WorkspaceViewProps {
   taskLogs?: Record<string, TaskLogMessage[]>;
   onOpenSourceMessage?: (messageId: string) => void;
 
-  // layout: desktop mặc định, mobile dùng cho /mobile
   layoutMode?: "desktop" | "mobile";
 
-  // Tool actions from mobile header
   onOpenQuickMsg?: () => void;
   onOpenPinned?: () => void;
   onOpenTodoList?: () => void;
@@ -154,7 +124,7 @@ interface WorkspaceViewProps {
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
   const {
-    groups,    
+    groups,
     selectedGroup,
     messages,
     setMessages,
@@ -180,7 +150,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onUpdateTaskChecklist,
     applyTemplateToTasks,
     checklistTemplates,
-    setChecklistTemplates, 
+    setChecklistTemplates,
 
     viewMode,
     workTypes,
@@ -214,7 +184,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onOpenPinned,
     onOpenTodoList,
   } = props;
-  
+
   const isMobile = layoutMode === "mobile";
   const bottomItems = [
     { key: "messages", label: "Tin nhắn", icon: <MessageSquareIcon className="w-5 h-5" /> },
@@ -222,22 +192,114 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     { key: "profile", label: "Cá nhân", icon: <UserIcon className="w-5 h-5" /> },
   ];
 
-  const [mobileTab, setMobileTab] = React.useState<"messages" | "work" | "profile">(
-    "messages"
-  );
+  const [mobileTab, setMobileTab] = React.useState<"messages" | "work" | "profile">("messages");
 
+  // Header expand toggle (still available)
   const [rightExpanded, setRightExpanded] = React.useState(false);
 
-  // Khi chọn chat từ danh sách tin nhắn, giữ nguyên tab "messages" và hiển thị nội dung chat trong vùng nội dung chính
-  const handleMobileSelectChat = (target: ChatTarget) => {
-    onSelectChat(target);
-    // Không chuyển tab nữa; vẫn ở "messages"
-    if (isMobile) {
-      setMobileTab("messages");
-    }
+  // Desktop resizable RightPanel
+  const containerRef = React.useRef<HTMLDivElement | null>(null);  
+
+  // Constants
+  const LEFT_WIDTH = 360;       // px
+  const MIN_RIGHT_WIDTH = 360;  // px
+  const DIVIDER_WIDTH = 8;      // px (w-2)
+  const MIN_LEFT_TOTAL = 600;   // px — lock when the whole left side (Left + Chat + Divider) would be < 500
+
+  // State
+  const [rightPanelWidth, setRightPanelWidth] = React.useState<number>(360);
+
+  // Drag refs
+  const draggingRef = React.useRef(false);
+  const startXRef = React.useRef(0);
+  const startRightRef = React.useRef(0);
+
+  // Measure content box width (exclude paddings)
+  const readContentWidth = React.useCallback(() => {
+    const el = containerRef.current!;
+    const cs = window.getComputedStyle(el);
+    const pl = parseFloat(cs.paddingLeft || "0");
+    const pr = parseFloat(cs.paddingRight || "0");
+    return el.clientWidth - pl - pr;
+  }, []);
+
+  // Clamp: allow dragging until (Left + Chat + Divider) reaches 500px
+  const clampRightWidth = React.useCallback((candidate: number) => {
+    const contentWidth = readContentWidth();
+    // grid columns when showRight: 360px | 1fr | 8px | rightPanelWidth
+    // leftTotal = contentWidth - rightPanelWidth
+    const maxRight = contentWidth - MIN_LEFT_TOTAL; // stop when leftTotal == 500
+    const minRight = MIN_RIGHT_WIDTH;
+    return Math.max(minRight, Math.min(candidate, Math.max(minRight, maxRight)));
+  }, [readContentWidth]);
+
+  // Keep width valid on resize/toggles
+  React.useEffect(() => {
+    if (!showRight) return;
+    setRightPanelWidth((prev) => clampRightWidth(prev));
+  }, [showRight, clampRightWidth]);
+
+  React.useEffect(() => {
+    const onResize = () => setRightPanelWidth((prev) => clampRightWidth(prev));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [clampRightWidth]);
+
+  // Divider drag handlers
+  const onDividerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!showRight || !containerRef.current) return;
+    draggingRef.current = true;
+    startXRef.current = e.clientX;
+    startRightRef.current = rightPanelWidth;    
+    window.addEventListener("mousemove", onWindowMouseMove);
+    window.addEventListener("mouseup", onWindowMouseUp);
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
   };
 
-  // Tạo title cho ChatMain từ selectedChat
+  const onWindowMouseMove = (e: MouseEvent) => {
+    if (!draggingRef.current) return;
+    const delta = startXRef.current - e.clientX; // >0 when moving left (grow RightPanel), <0 when moving right (shrink RightPanel)
+    const candidate = startRightRef.current + delta;
+    setRightPanelWidth(clampRightWidth(candidate));
+  };
+
+  const onWindowMouseUp = () => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;    
+    window.removeEventListener("mousemove", onWindowMouseMove);
+    window.removeEventListener("mouseup", onWindowMouseUp);
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+    setRightPanelWidth((v) => clampRightWidth(v)); // final clamp
+  };
+
+  // Expand by header button: keep Chat at 360, give the rest to Right
+  const handleToggleRightExpand = React.useCallback(() => {
+    if (!containerRef.current) {
+      setRightExpanded((v) => !v);
+      return;
+    }
+    const contentWidth = readContentWidth();
+    const targetLeftTotal = LEFT_WIDTH + 360 + DIVIDER_WIDTH;
+    const targetRight = contentWidth - targetLeftTotal;
+    setRightPanelWidth(clampRightWidth(targetRight));
+    setRightExpanded((v) => !v);
+    setShowRight(true);
+  }, [readContentWidth, clampRightWidth, setShowRight]);
+
+  // Basic desktop select handlers (unchanged)
+  const handleSelectGroupDesktop = (id: string) => {
+    onSelectGroup(id);
+    onSelectChat({ type: "group", id });
+  };
+
+  // Mobile handlers
+  const handleMobileSelectChat = (target: ChatTarget) => {
+    onSelectChat(target);
+    if (isMobile) setMobileTab("messages");
+  };
+
   const chatTitle =
     selectedChat?.type === "group"
       ? groups.find((g) => g.id === selectedChat.id)?.name ?? "Nhóm"
@@ -246,32 +308,20 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
       : "Trò chuyện";
 
   const resolvePinnedTime = (msg: Message) => {
-    // Nếu message có createdAt chuẩn → dùng luôn
-    if (msg.createdAt && !isNaN(Date.parse(msg.createdAt))) {
-      return msg.createdAt;
-    }
-
-    // Nếu msg.time đang là "HH:mm"
+    if (msg.createdAt && !isNaN(Date.parse(msg.createdAt))) return msg.createdAt;
     if (typeof msg.time === "string" && /^\d{2}:\d{2}$/.test(msg.time)) {
       const [hh, mm] = msg.time.split(":").map(Number);
-      const date = new Date();
-      date.setHours(hh);
-      date.setMinutes(mm);
-      date.setSeconds(0);
-      date.setMilliseconds(0);
-      return date.toISOString();
+      const d = new Date();
+      d.setHours(hh, mm, 0, 0);
+      return d.toISOString();
     }
-
-    // fallback
     return new Date().toISOString();
   };
 
   if (isMobile) {
-    return (      
+    return (
       <div className={`relative flex h-full flex-col bg-gray-50 ${mobileTab === "messages" && selectedChat ? "pb-0" : "pb-12"}`}>
-        {/* Content theo tab */}
         <div className="flex-1 min-h-0">
-          {/* TAB 1: messages = LeftSidebar / Pinned */}
           {mobileTab === "messages" && (
             <div className="h-full min-h-0 overflow-hidden flex flex-col">
               {workspaceMode === "pinned" ? (
@@ -286,35 +336,32 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                   onPreview={(file) => openPreview?.(file as any)}
                 />
               ) : !selectedChat ? (
-                  <div className="h-full min-h-0 overflow-y-auto">
-                    <LeftSidebar
-                      currentUserId={"u_diem_chi"}
-                      groups={groups}
-                      selectedGroup={selectedGroup as any}
-                      onSelectGroup={(id) => {
-                        onSelectGroup(id);
-                        handleMobileSelectChat({ type: "group", id });
-                      }}
-                      contacts={contacts}
-                      onSelectChat={handleMobileSelectChat}
-                      isMobile={true}
-                      onOpenQuickMsg={onOpenQuickMsg}
-                      onOpenPinned={onOpenPinned}
-                      onOpenTodoList={onOpenTodoList}
-                    />
-                  </div>
+                <div className="h-full min-h-0 overflow-y-auto">
+                  <LeftSidebar
+                    currentUserId={"u_diem_chi"}
+                    groups={groups}
+                    selectedGroup={selectedGroup as any}
+                    onSelectGroup={(id) => {
+                      onSelectGroup(id);
+                      handleMobileSelectChat({ type: "group", id });
+                    }}
+                    contacts={contacts}
+                    onSelectChat={handleMobileSelectChat}
+                    isMobile={true}
+                    onOpenQuickMsg={onOpenQuickMsg}
+                    onOpenPinned={onOpenPinned}
+                    onOpenTodoList={onOpenTodoList}
+                  />
+                </div>
               ) : (
-                // Full-screen ChatMain khi đã chọn chat
                 <div className="h-full min-h-0">
                   <ChatMain
                     selectedGroup={selectedGroup as any}
                     isMobile={true}
                     onBack={() => {
-                      // Trả về danh sách Tin nhắn
                       onClearSelectedChat?.();
                       setMobileTab("messages");
                     }}
-                    // messages & state
                     messages={messages}
                     setMessages={setMessages}
                     myWork={[]}
@@ -325,23 +372,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     q={q}
                     setQ={setQ}
                     searchInputRef={searchInputRef}
-                    onOpenCloseModalFor={() => { }}
+                    onOpenCloseModalFor={() => {}}
                     openPreview={openPreview}
-                    // Pin message
                     onTogglePin={(msg) => {
                       setPinnedMessages((prev) => {
                         const exists = prev.some((p) => p.id === msg.id);
                         if (exists) return prev.filter((p) => p.id !== msg.id);
-
-                        const isImage =
-                          msg.fileInfo?.type === "image" || msg.files?.[0]?.type === "image";
+                        const isImage = msg.fileInfo?.type === "image" || msg.files?.[0]?.type === "image";
                         const pinnedType: "text" | "image" | "file" =
-                          isImage
-                            ? "image"
-                            : (msg.fileInfo?.type || msg.files?.[0]?.type)
-                              ? "file"
-                              : "text";
-
+                          isImage ? "image" : (msg.fileInfo?.type || msg.files?.[0]?.type) ? "file" : "text";
                         return [
                           ...prev,
                           {
@@ -349,23 +388,17 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                             chatId: msg.groupId,
                             groupName: selectedGroup?.name ?? "",
                             workTypeName:
-                              selectedGroup?.workTypes?.find(
-                                (w) => w.id === selectedWorkTypeId
-                              )?.name ?? "",
+                              selectedGroup?.workTypes?.find((w) => w.id === selectedWorkTypeId)?.name ?? "",
                             sender: msg.sender,
                             type: pinnedType,
                             content: msg.type === "text" ? msg.content : undefined,
-                            preview:
-                              msg.type === "text"
-                                ? msg.content?.slice(0, 100)
-                                : "[Đính kèm]",
+                            preview: msg.type === "text" ? msg.content?.slice(0, 100) : "[Đính kèm]",
                             fileInfo: msg.fileInfo ?? msg.files?.[0] ?? undefined,
                             time: resolvePinnedTime(msg),
                           },
                         ];
                       });
                     }}
-                    // tiêu đề / context
                     title={chatTitle}
                     currentWorkTypeId={selectedWorkTypeId}
                     workTypes={workTypes}
@@ -373,7 +406,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     currentUserId={currentUserId}
                     currentUserName={currentUserName}
                     selectedChat={selectedChat}
-                    // info / task log
                     onReceiveInfo={onReceiveInfo}
                     onAssignFromMessage={onAssignFromMessage}
                     setTab={setTab}
@@ -387,7 +419,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
             </div>
           )}
 
-          {/* TAB 3: WORK = RightPanel full screen */}
           {mobileTab === "work" && (
             <div className="h-full min-h-0 overflow-hidden flex flex-col">
               <RightPanel
@@ -396,18 +427,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                 groupId={selectedGroup?.id}
                 groupName={
                   selectedChat?.type === "group"
-                    ? groups.find((g) => g.id === selectedChat.id)?.name ??
-                      "Nhóm"
+                    ? groups.find((g) => g.id === selectedChat.id)?.name ?? "Nhóm"
                     : "Trò chuyện"
                 }
-                workTypeName={
-                  workTypes?.find((w) => w.id === selectedWorkTypeId)?.name ??
-                  "—"
-                }
+                workTypeName={workTypes?.find((w) => w.id === selectedWorkTypeId)?.name ?? "—"}
                 checklistVariants={
-                  selectedGroup?.workTypes?.find(
-                    (w) => w.id === selectedWorkTypeId
-                  )?.checklistVariants
+                  selectedGroup?.workTypes?.find((w) => w.id === selectedWorkTypeId)?.checklistVariants
                 }
                 viewMode={viewMode}
                 selectedWorkTypeId={selectedWorkTypeId}
@@ -438,7 +463,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                 <div className="font-medium text-gray-900">Thông tin cá nhân</div>
                 <div className="mt-2 text-gray-700">
                   <div>Họ và tên: {currentUserName}</div>
-                   <div>Phòng ban: {currentUserDepartment ?? "—"} </div>
+                  <div>Phòng ban: {currentUserDepartment ?? "—"} </div>
                 </div>
               </div>
 
@@ -452,43 +477,43 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           )}
         </div>
 
-        {/* Bottom nav */}
-        {!(mobileTab === "messages" && !!selectedChat) && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t">
-          <nav className="grid grid-cols-3">
-            {bottomItems.map((item) => (
-              <button
-                key={item.key}
-                className={`flex flex-col items-center justify-center py-2 text-xs ${mobileTab === item.key ? "text-brand-600" : "text-gray-400"
+        {!(
+          mobileTab === "messages" && !!selectedChat
+        ) && (
+          <div className="absolute bottom-0 left-0 right-0 bg-white border-t">
+            <nav className="grid grid-cols-3">
+              {bottomItems.map((item) => (
+                <button
+                  key={item.key}
+                  className={`flex flex-col items-center justify-center py-2 text-xs ${
+                    mobileTab === item.key ? "text-brand-600" : "text-gray-400"
                   }`}
-                onClick={() => setMobileTab(item.key as typeof mobileTab)}
-              >
-                {React.cloneElement(item.icon, { className: "w-5 h-5" })}
-                <span className="mt-1">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-)}
+                  onClick={() => setMobileTab(item.key as typeof mobileTab)}
+                >
+                  {React.cloneElement(item.icon, { className: "w-5 h-5" })}
+                  <span className="mt-1">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
-          
     );
   }
 
-  // Desktop layout with expansion-aware grid
-  const desktopGridCols =
-    showRight
-      ? (rightExpanded ? "grid-cols-[360px,660px,1fr]" : "grid-cols-[360px,1fr,360px]")
-      : ("grid-cols-[360px,1fr]");
-
+  // Desktop layout: grid with draggable divider controlling RightPanel width
   return (
     <div
-      className={`grid h-full min-h-0 gap-3 p-3 transition-all duration-300 ${desktopGridCols}`}
+      ref={containerRef}
+      style={
+        showRight
+          ? { gridTemplateColumns: `360px 1fr ${DIVIDER_WIDTH}px ${rightPanelWidth}px` }
+          : { gridTemplateColumns: `360px 1fr` }
+      }
+      className="grid h-full"
     >
-
-      {/* CỘT TRÁI */}
+      {/* Left */}
       <div className="h-full min-h-0 rounded-2xl border border-gray-300 overflow-y-auto">
-        {/* LeftSidebar mới: chỉ hiển thị nhóm / liên hệ */}
         {workspaceMode === "pinned" ? (
           <PinnedMessagesPanel
             messages={pinnedMessages ?? []}
@@ -515,16 +540,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
         )}
       </div>
 
-      {/* CỘT GIỮA (ChatMain) */}
-      <div className="h-full min-h-0">
-        {/* ChatMain: truyền title động theo selectedChat */}
+      {/* Center (ChatMain) — IMPORTANT: allow shrinking by setting min-w-0 */}
+      <div className="h-full min-h-0 min-w-0">
         <ChatMain
           selectedGroup={selectedGroup as any}
           isMobile={false}
-          // các prop ChatMain hiện có:
-          messages={messages}            // TODO: bạn sẽ nối messages theo selectedChat ở bước tiếp theo
-          setMessages={setMessages}   // TODO: idem
-          myWork={[]}              // nếu ChatMain cần, bạn có thể truyền myWork thật
+          messages={messages}
+          setMessages={setMessages}
+          myWork={[]}
           showRight={showRight}
           setShowRight={setShowRight}
           showSearch={showSearch}
@@ -532,30 +555,21 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           q={q}
           setQ={setQ}
           searchInputRef={searchInputRef}
-          onOpenCloseModalFor={() => { }}
+          onOpenCloseModalFor={() => {}}
           openPreview={openPreview}
           onTogglePin={(msg) => {
-            setPinnedMessages(prev => {
-              const exists = prev.some(p => p.id === msg.id);
-
-              // Nếu đã tồn tại → unpin
-              if (exists) {
-                return prev.filter(p => p.id !== msg.id);
-              }
-
-              // Nếu chưa có → thêm mới + SHOW TOAST
+            setPinnedMessages((prev) => {
+              const exists = prev.some((p) => p.id === msg.id);
+              if (exists) return prev.filter((p) => p.id !== msg.id);
               onShowPinnedToast();
-
               const isImage =
                 msg.fileInfo?.type === "image" || msg.files?.[0]?.type === "image";
-
               const pinnedType: "text" | "image" | "file" =
                 isImage
                   ? "image"
                   : (msg.fileInfo?.type || msg.files?.[0]?.type)
                     ? "file"
                     : "text";
-
               return [
                 ...prev,
                 {
@@ -563,74 +577,75 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                   chatId: msg.groupId,
                   groupName: selectedGroup?.name ?? "",
                   workTypeName:
-                    selectedGroup?.workTypes?.find(w => w.id === selectedWorkTypeId)?.name ?? "",
+                    selectedGroup?.workTypes?.find((w) => w.id === selectedWorkTypeId)?.name ?? "",
                   sender: msg.sender,
                   type: pinnedType,
                   content: msg.type === "text" ? msg.content : undefined,
-                  preview: msg.type === "text" ? msg.content?.slice(0, 100) : "[Đính kèm]",
+                  preview:
+                    msg.type === "text" ? msg.content?.slice(0, 100) : "[Đính kèm]",
                   fileInfo: msg.fileInfo ?? msg.files?.[0] ?? undefined,
                   time: resolvePinnedTime(msg),
                 },
               ];
             });
           }}
-
           currentWorkTypeId={selectedWorkTypeId}
           title={chatTitle}
-
           workTypes={selectedGroup?.workTypes ?? []}
           selectedWorkTypeId={selectedWorkTypeId}
           onChangeWorkType={onChangeWorkType}
-
-          /* current user + selected chat (ChatMain cần để gửi tin đúng schema) */
           currentUserId={currentUserId}
           currentUserName={currentUserName}
           selectedChat={selectedChat}
-
           onReceiveInfo={onReceiveInfo}
           onAssignFromMessage={onAssignFromMessage}
           setTab={setTab}
           receivedInfos={receivedInfos}
           viewMode={viewMode}
-
           onOpenTaskLog={onOpenTaskLog}
           taskLogs={taskLogs}
-
           rightExpanded={rightExpanded}
-          onToggleRightExpand={() => setRightExpanded((v) => !v)}
+          onToggleRightExpand={handleToggleRightExpand}
         />
       </div>
 
-      {/* RightPanel giữ nguyên */}
+      {/* Divider (draggable) */}
       {showRight && (
-        <div className="h-full min-h-0 overflow-hidden flex flex-col">
+        <div className="relative h-full">
+          <div
+            className="absolute left-1/2 top-1/2
+               -translate-x-1/2 -translate-y-1/2
+               w-2 h-32 rounded-full
+               cursor-col-resize
+               bg-brand-100 hover:bg-brand-200 active:bg-brand-400"
+            onMouseDown={onDividerMouseDown}
+            title="Kéo để thay đổi độ rộng panel phải"
+          />
+        </div>
+      )}
+
+      {/* Right */}
+      {showRight && (
+        <div className="h-full min-h-0 min-w-0 overflow-hidden flex flex-col rounded-2xl border border-gray-300 bg-white">
           <RightPanel
             tab={tab}
             setTab={setTab}
             groupId={selectedGroup?.id}
-            // Truyền đúng ngữ cảnh cho tab "Thông tin"
             groupName={
               selectedChat?.type === "group"
-                ? (groups.find(g => g.id === selectedChat.id)?.name ?? "Nhóm")
+                ? (groups.find((g) => g.id === selectedChat.id)?.name ?? "Nhóm")
                 : "Trò chuyện"
             }
             workTypeName={
-              // nếu bạn đã có mảng workTypes [{id,name}]
-              (workTypes?.find(w => w.id === selectedWorkTypeId)?.name) ?? "—"
+              (workTypes?.find((w) => w.id === selectedWorkTypeId)?.name) ?? "—"
             }
-
             checklistVariants={
-              selectedGroup?.workTypes?.find(w => w.id === selectedWorkTypeId)
-                ?.checklistVariants
+              selectedGroup?.workTypes?.find((w) => w.id === selectedWorkTypeId)?.checklistVariants
             }
-
-            /* Context người dùng + workType */
-            viewMode={viewMode}                 // 'lead' | 'staff'
+            viewMode={viewMode}
             selectedWorkTypeId={selectedWorkTypeId}
             currentUserId={currentUserId}
-
-            /* Task */
-            tasks={tasks}                        // mảng Task của group hiện tại (nếu có)            
+            tasks={tasks}
             members={groupMembers}
             onChangeTaskStatus={onChangeTaskStatus}
             onReassignTask={undefined}
@@ -638,22 +653,16 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
             onUpdateTaskChecklist={onUpdateTaskChecklist}
             checklistTemplates={checklistTemplates}
             setChecklistTemplates={setChecklistTemplates}
-
-            /* Received Info */
             receivedInfos={receivedInfos}
             onTransferInfo={onTransferInfo}
             onAssignInfo={onAssignInfo}
             onOpenGroupTransfer={openTransferSheet}
-
-            applyTemplateToTasks={applyTemplateToTasks} 
-
+            applyTemplateToTasks={applyTemplateToTasks}
             taskLogs={taskLogs}
             onOpenTaskLog={onOpenTaskLog}
             onOpenSourceMessage={onOpenSourceMessage}
           />
-
         </div>
-
       )}
     </div>
   );
