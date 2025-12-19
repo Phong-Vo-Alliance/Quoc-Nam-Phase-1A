@@ -30,6 +30,7 @@ import type {
 import { MessageBubble } from '@/features/portal/components/MessageBubble';
 import { LinearTabs } from '../components/LinearTabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
+import { MobileTaskLogScreen } from './MobileTaskLogScreen';
 
 type ViewMode = 'lead' | 'staff';
 
@@ -131,6 +132,10 @@ export const ChatMain: React.FC<{
   const [inputValue, setInputValue] = React.useState('');
   const [inlineToast, setInlineToast] = React.useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  // Mobile task log screen state
+  const [mobileTaskLogOpen, setMobileTaskLogOpen] = React.useState(false);
+  const [mobileTaskLogId, setMobileTaskLogId] = React.useState<string | null>(null);
 
   const composerRef = React.useRef<HTMLDivElement | null>(null);
   const [sheetBottom, setSheetBottom] = React.useState<number>(130);
@@ -244,6 +249,7 @@ export const ChatMain: React.FC<{
   };
 
   return (
+    <>
     <main className={mainContainerCls}>
       {/* Header */}
       <div className={`flex items-center justify-between border-b shrink-0 ${headerPaddingCls}`}>
@@ -368,6 +374,10 @@ export const ChatMain: React.FC<{
               next={i < messages.length - 1 ? messages[i + 1] : null}
               onReply={(m) => setInputValue((prev) => (prev ? prev + '\n' : '') + `> ${m.type === 'text' ? m.content : '[Đính kèm]'}\n`)}
               onOpenTaskLog={(taskId) => onOpenTaskLog?.(taskId)}
+              onOpenTaskLogMobile={(taskId) => {
+                setMobileTaskLogId(taskId);
+                setMobileTaskLogOpen(true);
+              }}
               taskLogs={taskLogs}
               currentUserId={currentUserId}
               onPin={handlePinToggle}
@@ -468,5 +478,39 @@ export const ChatMain: React.FC<{
         </div>
       )}
     </main>
+
+    {/* Mobile Task Log Screen */}
+    {isMobileLayout && mobileTaskLogOpen && mobileTaskLogId && (
+      <MobileTaskLogScreen
+        open={mobileTaskLogOpen}
+        onBack={() => {
+          setMobileTaskLogOpen(false);
+          setMobileTaskLogId(null);
+        }}
+        task={myWork.find((t) => t.id === mobileTaskLogId)}
+        sourceMessage={messages.find((m) => m.taskId === mobileTaskLogId)}
+        messages={taskLogs[mobileTaskLogId] || []}
+        currentUserId={currentUserId}
+        members={mobileMembers}
+        onSend={(payload) => {
+          // Handle sending message in task log
+          const nowIso = new Date().toISOString();
+          const newMsg: TaskLogMessage = {
+            id: Date.now().toString(),
+            taskId: mobileTaskLogId,
+            type: 'text',
+            sender: currentUserName,
+            senderId: currentUserId,
+            content: payload.content,
+            time: nowIso,
+            createdAt: nowIso,
+            isMine: true,
+          };
+          // In a real app, this would update the taskLogs state
+          console.log('Send task log message:', newMsg);
+        }}
+      />
+    )}
+    </>
   );
 };
