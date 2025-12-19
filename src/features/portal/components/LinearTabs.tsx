@@ -8,11 +8,11 @@ export const LinearTabs = ({
   textClass = "text-sm",
   noWrap = true,
 }: {
-  tabs: { key: string; label: string }[];
+  tabs: { key: string; label: React.ReactNode }[];
   active: string;
   onChange: (key: string) => void;
   textClass?: string;
-  noWrap?: boolean;
+  noWrap?: boolean;  
 }) => {
   return (
     <div className="relative flex items-center gap-6 border-b border-gray-200">

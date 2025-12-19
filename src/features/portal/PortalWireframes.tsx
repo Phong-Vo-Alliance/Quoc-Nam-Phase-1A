@@ -1095,6 +1095,10 @@ const handleOpenSourceMessage = React.useCallback(
             onOpenTodoList={() => {
               pushToast("Việc cần làm: tính năng đang phát triển cho mobile.", "info");
             }}
+
+            checklistVariants={checklistVariants}
+            defaultChecklistVariantId={defaultChecklistVariantId}
+            onCreateTaskFromMessage={handleCreateTask}
           />          
         ) : (
           <TeamMonitorView
