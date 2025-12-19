@@ -1,65 +1,37 @@
 import React from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   Search,
   PanelRightClose,
   PanelRightOpen,
   MessageSquareText,
   Paperclip,
-  Image as ImageIcon,  
   Type,
   SendHorizonal,
   ChevronLeft,
   MoreVertical,
-  ArrowLeftRight,  
+  ArrowLeftRight,
   PlusCircle,
-  Calendar as CalendarIcon,
-  Folder,  
+  Folder,
   Images,
   ImageUp,
+  MapPin,
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
 import type {
   Message,
-  Task,  
+  Task,
   FileAttachment,
   GroupChat,
   ReceivedInfo,
   TaskLogMessage,
 } from '../types';
 import { MessageBubble } from '@/features/portal/components/MessageBubble';
-import { convertToPinnedMessage } from '@/features/portal/utils/convertToPinnedMessage';
 import { LinearTabs } from '../components/LinearTabs';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 
 type ViewMode = 'lead' | 'staff';
-
-export const formatTime = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const btn = (active = false) =>
-  `rounded-lg border px-3 py-1 transition ${active ? 'bg-brand-600 text-white border-sky-600 shadow-sm' : 'bg-white text-brand-700 border-brand-200 hover:bg-brand-50'}`;
-const inputCls =
-  'rounded-lg border px-3 py-2 text-sm border-brand-200 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-sky-300';
-
-const SegBtn: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    className={`px-2.5 py-1 text-xs rounded-md border transition ${
-      active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-brand-700 border-brand-200 hover:bg-brand-50'
-    }`}
-  >
-    {children}
-  </button>
-);
 
 export const ChatMain: React.FC<{
   selectedGroup?: GroupChat;
@@ -99,6 +71,18 @@ export const ChatMain: React.FC<{
   taskLogs?: Record<string, TaskLogMessage[]>;
   rightExpanded?: boolean;
   onToggleRightExpand?: () => void;
+
+  // NEW: data + callback for mobile assign
+  mobileMembers?: Array<{ id: string; name: string }>;
+  mobileChecklistVariants?: { id: string; name: string; isDefault?: boolean }[];
+  defaultChecklistVariantId?: string;
+  onCreateTaskFromMessage?: (payload: {
+    title: string;
+    sourceMessageId: string;
+    assigneeId: string;
+    checklistVariantId?: string;
+    checklistVariantName?: string;
+  }) => void;
 }> = ({
   selectedGroup,
   currentUserId,
@@ -137,18 +121,23 @@ export const ChatMain: React.FC<{
   taskLogs = {},
   rightExpanded = false,
   onToggleRightExpand,
+
+  // mobile assign
+  mobileMembers = [],
+  mobileChecklistVariants = [],
+  defaultChecklistVariantId,
+  onCreateTaskFromMessage,
 }) => {
   const [inputValue, setInputValue] = React.useState('');
+  const [inlineToast, setInlineToast] = React.useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  // NEW: đo chiều cao composer để đặt vị trí SheetContent
   const composerRef = React.useRef<HTMLDivElement | null>(null);
-  const [sheetBottom, setSheetBottom] = React.useState<number>(130); // fallback
+  const [sheetBottom, setSheetBottom] = React.useState<number>(130);
 
   React.useLayoutEffect(() => {
     const measure = () => {
       const h = composerRef.current?.getBoundingClientRect().height ?? 100;
-      // +8px để có khoảng hở giữa sheet và composer
       setSheetBottom(Math.round(h + 8));
     };
     measure();
@@ -160,7 +149,6 @@ export const ChatMain: React.FC<{
     };
   }, []);
 
-  // Mobile sheet open state
   const [openActions, setOpenActions] = React.useState(false);
   const imageInputRef = React.useRef<HTMLInputElement | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -180,13 +168,7 @@ export const ChatMain: React.FC<{
     [onTogglePin, setMessages]
   );
 
-  const handleOpenFile = useCallback(
-    (msg: Message) => {
-      if (msg.fileInfo) openPreview(msg.fileInfo);
-    },
-    [openPreview]
-  );
-
+  const handleOpenFile = useCallback((msg: Message) => { if (msg.fileInfo) openPreview(msg.fileInfo); }, [openPreview]);
   const handleOpenImage = handleOpenFile;
 
   const resolveThreadId = () => {
@@ -195,16 +177,14 @@ export const ChatMain: React.FC<{
     return `dm:${currentUserId}:${selectedChat.id}`;
   };
 
-  const handleSend = useCallback(() => {
-    if (!inputValue.trim()) return;
+  const sendMessage = (content: string) => {
     const nowIso = new Date().toISOString();
     const threadId = resolveThreadId();
-
     const newMsg: Message = {
       id: Date.now().toString(),
       type: 'text',
       sender: currentUserName,
-      content: inputValue.trim(),
+      content,
       time: nowIso,
       createdAt: nowIso,
       groupId: threadId,
@@ -215,50 +195,17 @@ export const ChatMain: React.FC<{
       isSystem: false,
     };
     setMessages((prev) => [...prev, newMsg]);
+  };
+
+  const handleSend = useCallback(() => {
+    if (!inputValue.trim()) return;
+    sendMessage(inputValue.trim());
     setInputValue('');
-  }, [inputValue, currentUserName, currentUserId, selectedWorkTypeId, currentWorkTypeId, setMessages]);
+  }, [inputValue]);
 
-  const handleReceiveFromBubble = useCallback(
-    (msg: Message) => {
-      onReceiveInfo?.(msg);
-      setTab('order');
-    },
-    [onReceiveInfo, setTab]
-  );
+  const handleReceiveFromBubble = useCallback((msg: Message) => { onReceiveInfo?.(msg); setTab('order'); }, [onReceiveInfo, setTab]);
 
-  const handleReceiveInfo = useCallback(
-    (msg: Message) => {
-      const timeIso = new Date().toISOString();
-      const excerpt = (msg.content ?? '').length > 40 ? (msg.content ?? '').slice(0, 40) + '…' : msg.content;
-
-      const systemMsg: Message = {
-        id: 'sys-' + Date.now(),
-        type: 'system',
-        content: `${excerpt} được tiếp nhận bởi ${currentUserName} lúc ${new Date(timeIso).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}`,
-        time: timeIso,
-        createdAt: timeIso,
-        groupId: msg.groupId,
-        sender: 'system',
-        senderId: 'system',
-        isMine: false,
-        isPinned: false,
-        isSystem: true,
-      };
-
-      setMessages((prev) => [...prev, systemMsg]);
-      onReceiveInfo?.(msg);
-      setShowRight(true);
-      setTab('order');
-    },
-    [currentUserName, onReceiveInfo, setMessages]
-  );
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
 
   React.useEffect(() => {
     if (!scrollToMessageId) return;
@@ -274,9 +221,27 @@ export const ChatMain: React.FC<{
 
   const handlePickImage = () => imageInputRef.current?.click();
   const handlePickFile = () => fileInputRef.current?.click();
-  const handleQuickMessage = () =>
-    setInputValue((prev) => (prev ? prev + '\n' : '') + 'Em sẽ xử lý yêu cầu này ngay bây giờ.\nCảm ơn anh/chị đã thông tin!');
+  const handleQuickMessage = () => setInputValue((prev) => (prev ? prev + '\n' : '') + 'Em sẽ xử lý yêu cầu này ngay bây giờ.\nCảm ơn anh/chị đã thông tin!');
   const handleFormat = () => setInputValue((prev) => (prev ? prev + '\n' : '') + '> Trích dẫn\n');
+
+  const handleShareLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const link = `https://maps.google.com/?q=${latitude},${longitude}`;
+        sendMessage(`Vị trí hiện tại: ${link}`);
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // Inline toast helper
+  const showInlineToast = (msg: string) => {
+    setInlineToast(msg);
+    setTimeout(() => setInlineToast(null), 2200);
+  };
 
   return (
     <main className={mainContainerCls}>
@@ -296,26 +261,10 @@ export const ChatMain: React.FC<{
             </div>
             <div className="flex items-center gap-1">
               {showSearch && (
-                <input
-                  ref={searchInputRef}
-                  autoFocus
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Tìm tin nhắn"
-                  className={`w-40 ${inputCls} transition-all`}
-                />
+                <input ref={searchInputRef} autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tin nhắn" className="w-40 rounded-lg border px-3 py-2 text-sm border-brand-200" />
               )}
-              <IconButton
-                className="rounded-full bg-white"
-                label={showSearch ? 'Đóng tìm kiếm' : 'Tìm kiếm trong chat'}
-                onClick={() => setShowSearch(!showSearch)}
-                icon={<Search className="h-4 w-4 text-brand-600" />}
-              />
-              <IconButton
-                className="rounded-full bg-white"
-                onClick={onOpenMobileMenu}
-                icon={<MoreVertical className="h-4 w-4 text-brand-600" />}
-              />              
+              <IconButton className="rounded-full bg-white" label={showSearch ? 'Đóng tìm kiếm' : 'Tìm kiếm trong chat'} onClick={() => setShowSearch(!showSearch)} icon={<Search className="h-4 w-4 text-brand-600" />} />
+              <IconButton className="rounded-full bg-white" onClick={onOpenMobileMenu} icon={<MoreVertical className="h-4 w-4 text-brand-600" />} />
             </div>
           </>
         ) : (
@@ -329,36 +278,40 @@ export const ChatMain: React.FC<{
                 </div>
                 {selectedGroup?.workTypes && selectedGroup.workTypes.length > 0 && (
                   <div className="mt-2">
-                    <LinearTabs
-                      tabs={selectedGroup.workTypes.map((w) => ({ key: w.id, label: w.name }))}
-                      active={selectedWorkTypeId ?? currentWorkTypeId ?? selectedGroup.workTypes[0]?.id}
-                      onChange={(id) => onChangeWorkType?.(id)}
-                      textClass="text-xs"
-                      noWrap
-                    />
+                      <LinearTabs
+                        tabs={selectedGroup.workTypes.map((w, idx) => {
+                          const unread = idx === 1 ? 3 : 0; // ví dụ: tab 2 có 3 tin mới
+
+                          return {
+                            key: w.id,
+                            label: (
+                              <div className="relative inline-flex items-center gap-1">
+                                <span>{w.name}</span>
+                                {unread > 0 && (
+                                  <span className="ml-1 inline-flex min-w-[16px] h-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-medium text-white">
+                                    {unread}
+                                  </span>
+                                )}
+                              </div>
+                            ),
+                          };
+                        })}
+                        active={selectedWorkTypeId ?? currentWorkTypeId ?? selectedGroup.workTypes[0]?.id}
+                        onChange={(id) => onChangeWorkType?.(id)}
+                        textClass="text-xs"
+                        noWrap
+                      />
                   </div>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2">
               {showSearch && (
-                <input
-                  ref={searchInputRef}
-                  autoFocus
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Tìm tin nhắn trong hội thoại"
-                  className={`w-72 ${inputCls} transition-all`}
-                />
+                <input ref={searchInputRef} autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tin nhắn trong hội thoại" className="w-72 rounded-lg border px-3 py-2 text-sm border-brand-200" />
               )}
               <IconButton className="rounded-full bg-white" label={showSearch ? 'Đóng tìm kiếm' : 'Tìm kiếm trong chat'} onClick={() => setShowSearch(!showSearch)} icon={<Search className="h-4 w-4 text-brand-600" />} />
               <IconButton className="rounded-full bg-white" label={rightExpanded ? 'Thu nhỏ panel phải' : 'Mở rộng panel phải'} onClick={onToggleRightExpand} icon={<ArrowLeftRight className="h-4 w-4 text-brand-600" />} />
-              <IconButton
-                className="rounded-full bg-white"
-                label={showRight ? 'Ẩn panel phải' : 'Hiện panel phải'}
-                onClick={() => setShowRight(!showRight)}
-                icon={showRight ? <PanelRightClose className="h-4 w-4 text-brand-600" /> : <PanelRightOpen className="h-4 w-4 text-brand-600" />}
-              />
+              <IconButton className="rounded-full bg-white" label={showRight ? 'Ẩn panel phải' : 'Hiện panel phải'} onClick={() => setShowRight(!showRight)} icon={showRight ? <PanelRightClose className="h-4 w-4 text-brand-600" /> : <PanelRightOpen className="h-4 w-4 text-brand-600" />} />
             </div>
           </>
         )}
@@ -368,7 +321,24 @@ export const ChatMain: React.FC<{
       {isMobileLayout && selectedGroup?.workTypes && selectedGroup.workTypes.length > 0 && (
         <div className="border-b px-2 pb-0 mt-2">
           <LinearTabs
-            tabs={selectedGroup.workTypes.map((w) => ({ key: w.id, label: w.name }))}
+            tabs={selectedGroup.workTypes.map((w, idx) => {
+              const unread = idx === 1 ? 3 : 0; // ví dụ: tab 2 có 3 tin mới
+
+              return {
+                key: w.id,
+                label: (
+                  <div className="relative inline-flex items-center gap-1">
+                    <span>{w.name}</span>
+                    {unread > 0 && (
+                      <span className="ml-1 inline-flex min-w-[16px] h-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-medium text-white">
+                        {unread}
+                      </span>
+                    )}
+                  </div>
+                ),
+              };
+            })}
+            
             active={selectedWorkTypeId ?? currentWorkTypeId ?? selectedGroup.workTypes[0]?.id}
             onChange={(id) => onChangeWorkType?.(id)}
             textClass="text-xs"
@@ -377,22 +347,26 @@ export const ChatMain: React.FC<{
         </div>
       )}
 
+      {/* Inline toast (mobile, below header) */}
+      {isMobileLayout && inlineToast && (
+        <div className="px-3 py-2 text-xs bg-emerald-50 text-emerald-700 border-b border-emerald-200">
+          {inlineToast}
+        </div>
+      )}
+
       {/* Message list */}
       <div className={`flex-1 overflow-y-auto space-y-1 min-h-0 bg-green-900/15 ${isMobileLayout ? 'p-2' : 'p-4'}`}>
         {messages.map((msg, i) => {
-          const infoForMsg = receivedInfos?.find((i) => i.messageId === msg.id);
+          const infoForMsg = receivedInfos?.find((x) => x.messageId === msg.id);
           const isReceived = !!infoForMsg;
-          const receivedLabel = infoForMsg ? `Đã tiếp nhận bởi ${currentUserName} lúc ${formatTime(infoForMsg.createdAt)}` : undefined;
+          const receivedLabel = infoForMsg ? `Đã tiếp nhận bởi ${currentUserName}` : undefined;
           return (
             <MessageBubble
               key={msg.id}
               data={msg}
               prev={i > 0 ? messages[i - 1] : null}
               next={i < messages.length - 1 ? messages[i + 1] : null}
-              onReply={(m) => {
-                const quote = m.type === 'text' ? m.content : `[${m.type}]`;
-                setInputValue((prev) => (prev ? prev + '\n' : '') + `> ${quote}\n`);
-              }}
+              onReply={(m) => setInputValue((prev) => (prev ? prev + '\n' : '') + `> ${m.type === 'text' ? m.content : '[Đính kèm]'}\n`)}
               onOpenTaskLog={(taskId) => onOpenTaskLog?.(taskId)}
               taskLogs={taskLogs}
               currentUserId={currentUserId}
@@ -405,32 +379,32 @@ export const ChatMain: React.FC<{
               onAssignFromMessage={onAssignFromMessage}
               viewMode={viewMode}
               isMobileLayout={isMobileLayout}
+              // mobile assign data + toast hook
+              mobileMembers={mobileMembers}
+              checklistVariants={mobileChecklistVariants}
+              defaultChecklistVariantId={defaultChecklistVariantId}
+              onCreateTaskFromMessage={(payload) => {
+                onCreateTaskFromMessage?.(payload);
+                const assigneeName =
+                  mobileMembers.find((m) => m.id === payload.assigneeId)?.name || "nhân viên";
+                showInlineToast(`Đã giao việc cho ${assigneeName}`);
+              }}
             />
           );
         })}
         <div ref={bottomRef} />
       </div>
 
-      {/* Composer */}
+      {/* Composer — mobile style */}
       {isMobileLayout ? (
-        // Mobile composer with bottom sheet actions
         <div ref={composerRef} className="border-t p-2 shrink-0 pb-[calc(0.5rem+env(safe-area-inset-bottom,0))]">
           <div className="flex items-center justify-between">
             <Sheet open={openActions} onOpenChange={setOpenActions}>
               <SheetTrigger asChild>
-
-                {/* <button
-                  type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-brand-600 text-brand-600 bg-white active:scale-95 transition"
-                  aria-label="Thêm"
-                >
-                  <Plus className="h-5 w-5" />
-                </button> */}
                 <IconButton className="bg-white" icon={<PlusCircle className="h-6 w-6 text-brand-600" />} />
               </SheetTrigger>
               <SheetContent
                 side="bottom"
-                // Giảm width + canh giữa + đặt vị trí ngay trên composer
                 className="rounded-t-2xl p-4 shadow-2xl w-[90%] max-w-[390px] left-1/2 -translate-x-1/2 right-auto top-auto"
                 style={{ bottom: sheetBottom }}
               >
@@ -438,124 +412,48 @@ export const ChatMain: React.FC<{
                   <SheetTitle className="text-sm text-gray-700">Chọn hành động</SheetTitle>
                   <SheetDescription className="text-xs text-gray-500">Thêm nội dung hoặc đính kèm vào tin nhắn</SheetDescription>
                 </SheetHeader>
-
                 <div className="mt-3 space-y-2">
-                  <button
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition"
-                    onClick={() => {
-                      setOpenActions(false);
-                      handlePickImage();
-                    }}
-                  >
-                    <Images className="h-5 w-5 text-gray-700" />
-                    <span className="text-sm text-gray-800">Ảnh</span>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition" onClick={() => { setOpenActions(false); handlePickImage(); }}>
+                    <Images className="h-5 w-5 text-emerald-600" /><span className="text-sm text-gray-800">Ảnh</span>
                   </button>
-                  
-                  <button
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition"
-                    onClick={() => {
-                      setOpenActions(false);
-                      handlePickFile();
-                    }}
-                  >
-                    <Folder className="h-5 w-5 text-gray-700" />
-                    <span className="text-sm text-gray-800">Tệp tin</span>
-                  </button>                 
-
-                  <button
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition"
-                    onClick={() => {
-                      setOpenActions(false);
-                      handleQuickMessage();
-                    }}
-                  >
-                    <MessageSquareText className="h-5 w-5 text-gray-700" />
-                    <span className="text-sm text-gray-800">Tin nhắn mẫu</span>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition" onClick={() => { setOpenActions(false); handlePickFile(); }}>
+                    <Folder className="h-5 w-5 text-green-600" /><span className="text-sm text-gray-800">Tệp tin</span>
                   </button>
-
-                  <button
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition"
-                    onClick={() => {
-                      setOpenActions(false);
-                      handleFormat();
-                    }}
-                  >
-                    <Type className="h-5 w-5 text-gray-700" />
-                    <span className="text-sm text-gray-800">Định dạng</span>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition" onClick={() => { setOpenActions(false); handleShareLocation(); }}>
+                    <MapPin className="h-5 w-5 text-teal-600" /><span className="text-sm text-gray-800">Vị trí</span>
+                  </button>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition" onClick={() => { setOpenActions(false); handleQuickMessage(); }}>
+                    <MessageSquareText className="h-5 w-5 text-lime-600" /><span className="text-sm text-gray-800">Tin nhắn mẫu</span>
+                  </button>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-brand-50 transition" onClick={() => { setOpenActions(false); handleFormat(); }}>
+                    <Type className="h-5 w-5 text-emerald-700" /><span className="text-sm text-gray-800">Định dạng</span>
                   </button>
                 </div>
               </SheetContent>
             </Sheet>
 
-            {/* Center: pill input */}
             <div className="flex-1">
               <input
                 className="w-full h-11 rounded-full border border-gray-300 px-4 text-sm placeholder-pink-400 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-sky-300"
                 placeholder="Nhập tin nhắn…"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               />
             </div>
 
-            {/* Right: quick image */}
-            {/* <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-brand-600 text-brand-600 bg-white active:scale-95 transition"
-              aria-label="Chèn hình ảnh"
-              onClick={handlePickImage}
-            >
-              <Images className="h-5 w-5" />
-            </button> */}
             <IconButton onClick={handlePickImage} className="bg-white" icon={<ImageUp className="h-6 w-6 text-brand-600" />} />
           </div>
 
           {/* Hidden inputs */}
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              onOpenCloseModalFor?.('attach-image');
-              e.currentTarget.value = '';
-            }}
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              onOpenCloseModalFor?.('attach-file');
-              e.currentTarget.value = '';
-            }}
-          />
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; onOpenCloseModalFor?.('attach-image'); e.currentTarget.value = ''; }} />
+          <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; onOpenCloseModalFor?.('attach-file'); e.currentTarget.value = ''; }} />
         </div>
       ) : (
-        // Desktop composer giữ nguyên
         <div className="border-t p-3 shrink-0">
           <div className="flex items-center gap-2">
-            <input
-              className={`flex-1 ${inputCls}`}
-              placeholder="Nhập tin nhắn…"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
+            <input className="flex-1 rounded-lg border px-3 py-2 text-sm border-brand-200" placeholder="Nhập tin nhắn…" value={inputValue} onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} />
             <IconButton label="Tin nhắn mẫu" className="rounded-lg border border-brand-200 bg-white px-2 py-2 text-brand-600 hover:bg-brand-50" onClick={handleQuickMessage} icon={<MessageSquareText size={18} />} />
             <button onClick={handleSend} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700">
               <SendHorizonal className="h-4 w-4" />
@@ -565,29 +463,8 @@ export const ChatMain: React.FC<{
             <IconButton label="Đính kèm" icon={<Paperclip className="h-4 w-4" />} onClick={handlePickFile} />
             <IconButton label="Định dạng" icon={<Type className="h-4 w-4" />} onClick={handleFormat} />
           </div>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              onOpenCloseModalFor?.('attach-image');
-              e.currentTarget.value = '';
-            }}
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              onOpenCloseModalFor?.('attach-file');
-              e.currentTarget.value = '';
-            }}
-          />
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; onOpenCloseModalFor?.('attach-image'); e.currentTarget.value = ''; }} />
+          <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; onOpenCloseModalFor?.('attach-file'); e.currentTarget.value = ''; }} />
         </div>
       )}
     </main>

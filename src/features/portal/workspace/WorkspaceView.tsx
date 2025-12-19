@@ -120,6 +120,10 @@ interface WorkspaceViewProps {
   onOpenQuickMsg?: () => void;
   onOpenPinned?: () => void;
   onOpenTodoList?: () => void;
+
+  checklistVariants?: { id: string; name: string; isDefault?: boolean }[];
+  defaultChecklistVariantId?: string;
+  onCreateTaskFromMessage?: (payload: {title: string; }) => void;
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
@@ -183,6 +187,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onOpenQuickMsg,
     onOpenPinned,
     onOpenTodoList,
+
+    checklistVariants,
+    defaultChecklistVariantId,
+    onCreateTaskFromMessage,
   } = props;
 
   const isMobile = layoutMode === "mobile";
@@ -216,7 +224,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
 
   // Measure content box width (exclude paddings)
   const readContentWidth = React.useCallback(() => {
-    const el = containerRef.current!;
+    const el = containerRef.current;
+    if (!el) {
+      // Mobile hoặc chưa mount → fallback an toàn
+      return window.innerWidth;
+    }
+
     const cs = window.getComputedStyle(el);
     const pl = parseFloat(cs.paddingLeft || "0");
     const pr = parseFloat(cs.paddingRight || "0");
@@ -413,6 +426,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     viewMode={viewMode}
                     onOpenTaskLog={onOpenTaskLog}
                     taskLogs={taskLogs}
+
+                    // mobile assign data
+                    mobileMembers={groupMembers}
+                    mobileChecklistVariants={checklistVariants}
+                    defaultChecklistVariantId={defaultChecklistVariantId}
+                    onCreateTaskFromMessage={onCreateTaskFromMessage}
                   />
                 </div>
               )}
