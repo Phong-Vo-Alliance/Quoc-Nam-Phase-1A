@@ -308,7 +308,7 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
       <Sheet open={showFilter} onOpenChange={setShowFilter}>
         <SheetContent
           side="bottom"
-          className="rounded-t-2xl p-0 h-[70vh] flex flex-col"
+          className="fixed left-1/2 -translate-x-1/2 -translate-y-1/3 z-[999] rounded-t-2xl p-0 h-[40vh] w-[20vw] flex flex-col"
         >
           <SheetHeader className="px-4 py-4 border-b">
             <div className="flex items-center justify-between">
