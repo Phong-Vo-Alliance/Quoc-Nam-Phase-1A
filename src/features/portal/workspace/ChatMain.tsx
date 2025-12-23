@@ -16,6 +16,7 @@ import {
   Images,
   ImageUp,
   MapPin,
+  ClipboardList, LayoutList, NotebookPen,
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
@@ -31,8 +32,96 @@ import { MessageBubble } from '@/features/portal/components/MessageBubble';
 import { LinearTabs } from '../components/LinearTabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { MobileTaskLogScreen } from './MobileTaskLogScreen';
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { TabInfoMobile } from '../components/TabInfoMobile';
+import { mockMessagesByWorkType } from "@/data/mockMessages";
+import type { Phase1AFileItem } from '../components/FileManagerPhase1A';
 
 type ViewMode = 'lead' | 'staff';
+
+// Helper:  map workTypeId -> key trong mockMessagesByWorkType
+const getWorkTypeKey = (workTypeId?:  string) => {
+  switch (workTypeId) {
+    case "wt_nhan_hang":
+      return "nhanHang";
+    case "wt_doi_tra":
+      return "doiTra";
+    case "wt_lich_boc_hang":
+      return "lichBocHang";
+    case "wt_don_boc_hang":
+      return "donBocHang";
+    default:
+      return "nhanHang";
+  }
+};
+
+// Helper: check attachment type
+type AttachmentType = "pdf" | "excel" | "word" | "image" | "other";
+const isMediaAttachment = (attType: AttachmentType) => attType === "image";
+const isDocAttachment = (attType: AttachmentType) => attType !== "image";
+
+// Helper: extract files from messages
+const extractFilesFromMessages = (
+  messageList: any[],
+  groupId?: string
+): {
+  mediaFiles: Phase1AFileItem[];
+  docFiles: Phase1AFileItem[];
+  senders: string[];
+} => {
+  const media: Phase1AFileItem[] = [];
+  const docs: Phase1AFileItem[] = [];
+  const senderSet = new Set<string>();
+
+  messageList.forEach((m) => {
+    // Collect senders
+    if (m.sender) senderSet.add(m.sender);
+
+    const attachments: {
+      name: string;
+      url: string;
+      type: AttachmentType;
+      size?: string;
+    }[] = [];
+
+    if (Array.isArray(m.files)) {
+      attachments.push(...m.files);
+    }
+    if (m.fileInfo) {
+      attachments.push(m.fileInfo);
+    }
+
+    attachments.forEach((att, index) => {
+      const ext = (att.name.split(".").pop() || "").toLowerCase();
+      const dateLabel = m.createdAt
+        ? new Date(m.createdAt).toLocaleDateString("vi-VN")
+        : m.time;
+
+      const base: Phase1AFileItem = {
+        id: `${m.id}__${index}`,
+        name: att.name,
+        kind: "doc",
+        url: att.url,
+        ext,
+        sizeLabel: att.size,
+        dateLabel,
+        messageId: m.id,
+      };
+
+      if (isMediaAttachment(att.type)) {
+        media.push({ ...base, kind: "image" });
+      } else if (isDocAttachment(att.type)) {
+        docs.push({ ...base, kind: "doc" });
+      }
+    });
+  });
+
+  return {
+    mediaFiles: media,
+    docFiles: docs,
+    senders: Array.from(senderSet),
+  };
+};
 
 export const ChatMain: React.FC<{
   selectedGroup?: GroupChat;
@@ -44,7 +133,10 @@ export const ChatMain: React.FC<{
 
   isMobile?: boolean;
   onBack?: () => void;
-  onOpenMobileMenu?: () => void;
+  // onOpenMobileMenu?: () => void;
+  onOpenInfo?: () => void;
+  onOpenTasks?: () => void;
+  onOpenThreadTasks?: () => void;
 
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -68,6 +160,7 @@ export const ChatMain: React.FC<{
   onAssignFromMessage?: (msg: Message) => void;
   setTab: (v: 'info' | 'order' | 'tasks') => void;
   viewMode?: ViewMode;
+  tasks: Task[];
   onOpenTaskLog?: (taskId: string) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
   rightExpanded?: boolean;
@@ -94,7 +187,10 @@ export const ChatMain: React.FC<{
 
   isMobile = false,
   onBack,
-  onOpenMobileMenu,
+  // onOpenMobileMenu,
+  onOpenInfo,
+  onOpenTasks,
+  onOpenThreadTasks,
 
   messages,
   setMessages,
@@ -118,6 +214,7 @@ export const ChatMain: React.FC<{
   onAssignFromMessage,
   setTab,
   viewMode = 'staff',
+  tasks,
   onOpenTaskLog,
   taskLogs = {},
   rightExpanded = false,
@@ -136,6 +233,7 @@ export const ChatMain: React.FC<{
   // Mobile task log screen state
   const [mobileTaskLogOpen, setMobileTaskLogOpen] = React.useState(false);
   const [mobileTaskLogId, setMobileTaskLogId] = React.useState<string | null>(null);
+  const [mobileInfoOpen, setMobileInfoOpen] = React.useState(false);
 
   const composerRef = React.useRef<HTMLDivElement | null>(null);
   const [sheetBottom, setSheetBottom] = React.useState<number>(130);
@@ -157,6 +255,7 @@ export const ChatMain: React.FC<{
   const [openActions, setOpenActions] = React.useState(false);
   const imageInputRef = React.useRef<HTMLInputElement | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [openMobileMenu, setOpenMobileMenu] = React.useState(false);
 
   const isMobileLayout = isMobile;
   const memberCount = selectedGroup?.members?.length ?? 0;
@@ -164,6 +263,22 @@ export const ChatMain: React.FC<{
 
   const mainContainerCls = isMobileLayout ? 'flex flex-col w-full h-full min-h-0 bg-white' : 'flex flex-col w-full rounded-2xl border border-gray-300 bg-white shadow-sm h-full min-h-0';
   const headerPaddingCls = isMobileLayout ? 'px-0 py-1' : 'pt-4 pr-4 pl-4';
+
+  // Tính toán file data cho TabInfoMobile
+  const fileData = React.useMemo(() => {
+    if (!selectedGroup?.id || !isMobileLayout) {
+      return { mediaFiles: [], docFiles: [], senders: [] };
+    }
+
+    const key = getWorkTypeKey(selectedWorkTypeId ?? currentWorkTypeId);
+    const allMessages = (mockMessagesByWorkType as any)[key] || [];
+    const groupMessages = allMessages.filter(
+      (m: any) =>
+        (m.groupId || "").toLowerCase() === selectedGroup.id.toLowerCase()
+    );
+
+    return extractFilesFromMessages(groupMessages, selectedGroup.id);
+  }, [selectedGroup?.id, selectedWorkTypeId, currentWorkTypeId, isMobileLayout]);
 
   const handlePinToggle = useCallback(
     (msg: Message) => {
@@ -270,7 +385,62 @@ export const ChatMain: React.FC<{
                 <input ref={searchInputRef} autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tin nhắn" className="w-40 rounded-lg border px-3 py-2 text-sm border-brand-200" />
               )}
               <IconButton className="rounded-full bg-white" label={showSearch ? 'Đóng tìm kiếm' : 'Tìm kiếm trong chat'} onClick={() => setShowSearch(!showSearch)} icon={<Search className="h-4 w-4 text-brand-600" />} />
-              <IconButton className="rounded-full bg-white" onClick={onOpenMobileMenu} icon={<MoreVertical className="h-4 w-4 text-brand-600" />} />
+                <Popover open={openMobileMenu} onOpenChange={setOpenMobileMenu}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      title="Hành động"
+                      className="p-2 rounded-full text-gray-500 hover:bg-gray-100 active:opacity-90"
+                      onClick={() => {
+                        setOpenMobileMenu(false);                        
+                      }}
+                    >
+                      <MoreVertical className="h-4 w-4 text-brand-600" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" side="bottom" className="w-56 rounded-xl border border-gray-200 shadow-lg p-2">
+                    <div className="flex flex-col">
+                      <button
+                        className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
+                        onClick={() => {
+                          setOpenMobileMenu(false);
+                          setMobileInfoOpen(true);
+                        }}
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                          <ClipboardList className="h-4 w-4 text-brand-600" />
+                        </div>
+                        <span className="text-sm font-normal">Thông tin</span>
+                      </button>
+
+                      <button
+                        className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
+                        onClick={() => {
+                          setOpenMobileMenu(false);
+                          onOpenTasks?.();
+                        }}
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                          <LayoutList className="h-4 w-4 text-brand-600" />
+                        </div>
+                        <span className="text-sm font-normal">Công việc</span>
+                      </button>
+
+                      <button
+                        className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
+                        onClick={() => {
+                          setOpenMobileMenu(false);
+                          onOpenThreadTasks?.();
+                        }}
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                          <NotebookPen className="h-4 w-4 text-brand-600" />
+                        </div>
+                        <span className="text-sm font-normal">Nhật ký</span>
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
             </div>
           </>
         ) : (
@@ -487,7 +657,7 @@ export const ChatMain: React.FC<{
           setMobileTaskLogOpen(false);
           setMobileTaskLogId(null);
         }}
-        task={myWork.find((t) => t.id === mobileTaskLogId)}
+        task={tasks.find((t) => t.id === mobileTaskLogId)}
         sourceMessage={messages.find((m) => m.taskId === mobileTaskLogId)}
         messages={taskLogs[mobileTaskLogId] || []}
         currentUserId={currentUserId}
@@ -511,6 +681,41 @@ export const ChatMain: React.FC<{
         }}
       />
     )}
+
+      {/* Mobile Info Screen */}
+      {isMobileLayout && mobileInfoOpen && (
+        <TabInfoMobile
+          open={mobileInfoOpen}
+          onBack={() => setMobileInfoOpen(false)}
+          groupId={selectedGroup?.id}
+          groupName={selectedGroup?.name ?? title}
+          workTypeName={
+            workTypes?.find((w) => w.id === (selectedWorkTypeId ?? currentWorkTypeId))?.name ?? "—"
+          }
+          selectedWorkTypeId={selectedWorkTypeId ?? currentWorkTypeId}
+          viewMode={viewMode}
+          members={mobileMembers}
+          onAddMember={() => {
+            setMobileInfoOpen(false);
+            // TODO: Mở modal thêm thành viên
+          }}
+          onOpenSourceMessage={(messageId) => {
+            setMobileInfoOpen(false);
+            // Scroll đến message trong chat
+            const el = document.getElementById(`msg-${messageId}`);
+            if (el) {
+              el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              el.classList.add('ring-2', 'ring-brand-500');
+              setTimeout(() => {
+                el.classList.remove('ring-2', 'ring-brand-500');
+              }, 2000);
+            }
+          }}
+          allMediaFiles={fileData.mediaFiles}
+          allDocFiles={fileData.docFiles}
+          allSenders={fileData.senders}
+        />
+      )}
     </>
   );
 };

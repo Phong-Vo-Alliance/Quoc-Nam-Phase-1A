@@ -424,6 +424,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     setTab={setTab}
                     receivedInfos={receivedInfos}
                     viewMode={viewMode}
+                    tasks={tasks}
                     onOpenTaskLog={onOpenTaskLog}
                     taskLogs={taskLogs}
 
@@ -621,6 +622,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           setTab={setTab}
           receivedInfos={receivedInfos}
           viewMode={viewMode}
+          tasks={tasks}
           onOpenTaskLog={onOpenTaskLog}
           taskLogs={taskLogs}
           rightExpanded={rightExpanded}

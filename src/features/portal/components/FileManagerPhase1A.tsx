@@ -69,6 +69,9 @@ export type FileManagerPhase1AProps = {
 
   /** Callback khi user bấm "Xem tin nhắn gốc" */
   onOpenSourceMessage?: (messageId: string) => void;
+
+  isMobile?: boolean;
+  onOpenAllFiles?: (mode: FileManagerPhase1AMode) => void;
 };
 
 const getWorkTypeKey = (workTypeId?: string) => {
@@ -108,6 +111,8 @@ export const FileManagerPhase1A: React.FC<FileManagerPhase1AProps> = ({
   groupId,
   selectedWorkTypeId,
   onOpenSourceMessage,
+  isMobile = false,
+  onOpenAllFiles,
 }) => {
   const [previewFile, setPreviewFile] = React.useState<Phase1AFileItem | null>(
     null
@@ -328,8 +333,13 @@ export const FileManagerPhase1A: React.FC<FileManagerPhase1AProps> = ({
           type="button"
           className="mt-2 w-full rounded-md bg-gray-100 py-1.5 text-center text-xs text-gray-700 hover:bg-gray-200"
           onClick={() => {
-            setAllTab(mode);      // click ở Ảnh/Video thì mở tab Ảnh/Video trước, tương tự cho Tài liệu
-            setShowAll(true);
+            if (isMobile && onOpenAllFiles) {
+              onOpenAllFiles(mode);
+            } else {
+              // Destop behavior - open dialog
+              setAllTab(mode);
+              setShowAll(true);
+            }
           }}
         >
           Xem tất cả
