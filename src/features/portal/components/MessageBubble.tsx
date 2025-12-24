@@ -33,6 +33,7 @@ interface MessageBubbleProps {
   onAssignFromMessage?: (msg: Message) => void;
   viewMode?: "lead" | "staff";
   onOpenTaskLog?: (taskId: string) => void;
+  onOpenTaskLogMobile?: (taskId: string) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
   currentUserId?: string;
   disableExtraActions?: boolean;
@@ -86,6 +87,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onAssignFromMessage,
   viewMode,
   onOpenTaskLog,
+  onOpenTaskLogMobile,
   taskLogs = {},
   currentUserId,
   disableExtraActions = false,
@@ -386,7 +388,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       {data.taskId && taskLogs?.[data.taskId] && (
         <div
           className="mt-1 ml-10 cursor-pointer text-[11px] text-gray-500 hover:text-gray-700 flex items-center gap-1"
-          onClick={() => onOpenTaskLog?.(data.taskId!)}
+          onClick={() => {
+            if (isMobileLayout && onOpenTaskLogMobile) {
+              onOpenTaskLogMobile(data.taskId!);
+            } else {
+              onOpenTaskLog?.(data.taskId!);
+            }
+          }}
         >
           <span className="text-emerald-600">📝 Nhật ký công việc</span>
 

@@ -13,7 +13,8 @@ import type {
   ReceivedInfo,
   ChecklistItem,
   ChecklistTemplateItem,
-  TaskLogMessage,
+  ChecklistTemplateMap,
+  TaskLogMessage,  
 } from "../types";
 import {
   MessageSquareIcon,
@@ -76,11 +77,11 @@ interface WorkspaceViewProps {
   setTab: (v: "info" | "order" | "tasks") => void;
   tasks: Task[];
   groupMembers: Array<{ id: string; name: string; role?: "Leader" | "Member" }>;
-  onChangeTaskStatus: (id: string, nextStatus: Task["status"]) => void;
-  onToggleChecklist: (taskId: string, itemId: string, done: boolean) => void;
-  onUpdateTaskChecklist: (taskId: string, next: ChecklistItem[]) => void;
+  // onChangeTaskStatus: (id: string, nextStatus: Task["status"]) => void;
+  // onToggleChecklist: (taskId: string, itemId: string, done: boolean) => void;
+  // onUpdateTaskChecklist: (taskId: string, next: ChecklistItem[]) => void;
   applyTemplateToTasks?: (workTypeId: string, template: ChecklistTemplateItem[]) => void;
-  checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
+  // checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
   setChecklistTemplates: React.Dispatch<React.SetStateAction<Record<string, Record<string, ChecklistTemplateItem[]>>>>;
 
   workspaceMode: "default" | "pinned";
@@ -124,6 +125,15 @@ interface WorkspaceViewProps {
   checklistVariants?: { id: string; name: string; isDefault?: boolean }[];
   defaultChecklistVariantId?: string;
   onCreateTaskFromMessage?: (payload: {title: string; }) => void;
+
+  // Task management
+  onChangeTaskStatus: (id: string, nextStatus: Task["status"]) => void;
+  onReassignTask?: (id: string, assigneeId: string) => void;
+  onToggleChecklist: (taskId: string, itemId: string, done: boolean) => void;
+  onUpdateTaskChecklist: (taskId: string, next: ChecklistItem[]) => void;
+
+  // Checklist templates
+  checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
@@ -149,11 +159,11 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     setTab,
     tasks,
     groupMembers,
-    onChangeTaskStatus,
-    onToggleChecklist,
-    onUpdateTaskChecklist,
+    // onChangeTaskStatus,
+    // onToggleChecklist,
+    // onUpdateTaskChecklist,
     applyTemplateToTasks,
-    checklistTemplates,
+    // checklistTemplates,
     setChecklistTemplates,
 
     viewMode,
@@ -191,6 +201,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     checklistVariants,
     defaultChecklistVariantId,
     onCreateTaskFromMessage,
+
+    onChangeTaskStatus,
+    onReassignTask,
+    onToggleChecklist,
+    onUpdateTaskChecklist,
+    checklistTemplates,
   } = props;
 
   const isMobile = layoutMode === "mobile";
@@ -421,9 +437,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     selectedChat={selectedChat}
                     onReceiveInfo={onReceiveInfo}
                     onAssignFromMessage={onAssignFromMessage}
-                    setTab={setTab}
+                    setTab={setTab}                    
                     receivedInfos={receivedInfos}
                     viewMode={viewMode}
+                    tasks={tasks}
                     onOpenTaskLog={onOpenTaskLog}
                     taskLogs={taskLogs}
 
@@ -432,6 +449,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     mobileChecklistVariants={checklistVariants}
                     defaultChecklistVariantId={defaultChecklistVariantId}
                     onCreateTaskFromMessage={onCreateTaskFromMessage}
+
+                    // Mobile Task callbacks
+                    onChangeTaskStatus={onChangeTaskStatus}
+                    onReassignTask={onReassignTask}
+                    onToggleChecklist={onToggleChecklist}
+                    onUpdateTaskChecklist={onUpdateTaskChecklist}
+
+                    checklistTemplates={checklistTemplates}
+                    setChecklistTemplates={setChecklistTemplates}
                   />
                 </div>
               )}
@@ -621,10 +647,20 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           setTab={setTab}
           receivedInfos={receivedInfos}
           viewMode={viewMode}
+          tasks={tasks}
           onOpenTaskLog={onOpenTaskLog}
           taskLogs={taskLogs}
           rightExpanded={rightExpanded}
           onToggleRightExpand={handleToggleRightExpand}
+
+          // Mobile Task callbacks
+          onChangeTaskStatus={onChangeTaskStatus}
+          onReassignTask={onReassignTask}
+          onToggleChecklist={onToggleChecklist}
+          onUpdateTaskChecklist={onUpdateTaskChecklist}
+
+          checklistTemplates={checklistTemplates}
+          setChecklistTemplates={setChecklistTemplates}
         />
       </div>
 
