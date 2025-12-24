@@ -17,6 +17,7 @@ import {
   ImageUp,
   MapPin,
   ClipboardList, LayoutList, NotebookPen,
+  ListChecks,  
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
@@ -27,6 +28,7 @@ import type {
   GroupChat,
   ReceivedInfo,
   TaskLogMessage,
+  ChecklistItem, ChecklistTemplateMap
 } from '../types';
 import { MessageBubble } from '@/features/portal/components/MessageBubble';
 import { LinearTabs } from '../components/LinearTabs';
@@ -36,6 +38,8 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { TabInfoMobile } from '../components/TabInfoMobile';
 import { mockMessagesByWorkType } from "@/data/mockMessages";
 import type { Phase1AFileItem } from '../components/FileManagerPhase1A';
+import { TabTaskMobile } from '../components/TabTaskMobile';
+import { DefaultChecklistMobile } from '../components/DefaultChecklistMobile';
 
 type ViewMode = 'lead' | 'staff';
 
@@ -177,6 +181,15 @@ export const ChatMain: React.FC<{
     checklistVariantId?: string;
     checklistVariantName?: string;
   }) => void;
+
+  // Task management callbacks
+onChangeTaskStatus?: (id: string, next: Task["status"]) => void;
+onReassignTask?: (id: string, assigneeId: string) => void;
+onToggleChecklist?: (taskId: string, itemId: string, done: boolean) => void;
+onUpdateTaskChecklist?: (taskId: string, next: ChecklistItem[]) => void;
+
+// Checklist templates
+checklistTemplates?: ChecklistTemplateMap;
 }> = ({
   selectedGroup,
   currentUserId,
@@ -225,6 +238,13 @@ export const ChatMain: React.FC<{
   mobileChecklistVariants = [],
   defaultChecklistVariantId,
   onCreateTaskFromMessage,
+
+  // Task management for mobile
+  onChangeTaskStatus,
+  onReassignTask,
+  onToggleChecklist,
+  onUpdateTaskChecklist,
+  checklistTemplates,
 }) => {
   const [inputValue, setInputValue] = React.useState('');
   const [inlineToast, setInlineToast] = React.useState<string | null>(null);
@@ -234,6 +254,8 @@ export const ChatMain: React.FC<{
   const [mobileTaskLogOpen, setMobileTaskLogOpen] = React.useState(false);
   const [mobileTaskLogId, setMobileTaskLogId] = React.useState<string | null>(null);
   const [mobileInfoOpen, setMobileInfoOpen] = React.useState(false);
+  const [mobileTaskOpen, setMobileTaskOpen] = React.useState(false);
+  const [mobileChecklistOpen, setMobileChecklistOpen] = React.useState(false);
 
   const composerRef = React.useRef<HTMLDivElement | null>(null);
   const [sheetBottom, setSheetBottom] = React.useState<number>(130);
@@ -417,7 +439,7 @@ export const ChatMain: React.FC<{
                         className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
                         onClick={() => {
                           setOpenMobileMenu(false);
-                          onOpenTasks?.();
+                          setMobileTaskOpen(true);
                         }}
                       >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full">
@@ -430,13 +452,13 @@ export const ChatMain: React.FC<{
                         className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
                         onClick={() => {
                           setOpenMobileMenu(false);
-                          onOpenThreadTasks?.();
+                          setMobileChecklistOpen(true);
                         }}
                       >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full">
-                          <NotebookPen className="h-4 w-4 text-brand-600" />
+                          <ListChecks className="h-4 w-4 text-brand-600" />
                         </div>
-                        <span className="text-sm font-normal">Nhật ký</span>
+                        <span className="text-sm font-normal">Checklist mặc định</span>
                       </button>
                     </div>
                   </PopoverContent>
@@ -714,6 +736,60 @@ export const ChatMain: React.FC<{
           allMediaFiles={fileData.mediaFiles}
           allDocFiles={fileData.docFiles}
           allSenders={fileData.senders}
+        />
+      )}
+
+      {/* Mobile Info Screen */}
+      {isMobileLayout && mobileTaskOpen && (
+        <TabTaskMobile
+          open={mobileTaskOpen}
+          onBack={() => setMobileTaskOpen(false)}
+          groupId={selectedGroup?.id}
+          groupName={selectedGroup?.name ?? title}
+          workTypeName={
+            workTypes?.find((w) => w.id === (selectedWorkTypeId ?? currentWorkTypeId))?.name ?? "—"
+          }
+          selectedWorkTypeId={selectedWorkTypeId ?? currentWorkTypeId}
+          viewMode={viewMode}
+          currentUserId={currentUserId}
+          tasks={tasks}
+          members={mobileMembers}
+
+          // 🆕 NEW: Callbacks từ parent
+          onChangeTaskStatus={onChangeTaskStatus}
+          onReassignTask={onReassignTask}
+          onToggleChecklist={onToggleChecklist}
+          onUpdateTaskChecklist={onUpdateTaskChecklist}
+
+          onOpenTaskLog={(taskId) => {
+            setMobileTaskOpen(false);
+            setMobileTaskLogId(taskId);
+            setMobileTaskLogOpen(true);
+          }}
+          taskLogs={taskLogs}
+
+          // 🆕 NEW: Checklist templates
+          checklistTemplates={checklistTemplates}
+          checklistVariants={
+            selectedGroup?.workTypes?.find((w) => w.id === selectedWorkTypeId)?.checklistVariants
+          }
+        />
+      )}
+
+      {/* Mobile Default Checklist Screen */}
+      {isMobileLayout && mobileChecklistOpen && (
+        <DefaultChecklistMobile
+        open={mobileChecklistOpen}
+          onBack={() => setMobileChecklistOpen(false)}
+          groupId={selectedGroup?.id}
+          groupName={selectedGroup?.name ?? title}
+          workTypeName={
+            workTypes?.find((w) => w.id === (selectedWorkTypeId ?? currentWorkTypeId))?.name ?? "—"
+          }
+          selectedWorkTypeId={selectedWorkTypeId ?? currentWorkTypeId}
+          viewMode={viewMode}
+          members={mobileMembers}
+          
         />
       )}
     </>

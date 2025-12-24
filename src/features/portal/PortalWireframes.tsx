@@ -1099,6 +1099,9 @@ const handleOpenSourceMessage = React.useCallback(
             checklistVariants={checklistVariants}
             defaultChecklistVariantId={defaultChecklistVariantId}
             onCreateTaskFromMessage={handleCreateTask}
+            
+            onReassignTask={undefined}  // hoặc implement nếu cần           
+            
           />          
         ) : (
           <TeamMonitorView
