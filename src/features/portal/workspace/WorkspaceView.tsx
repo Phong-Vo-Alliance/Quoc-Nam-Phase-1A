@@ -212,7 +212,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
   const isMobile = layoutMode === "mobile";
   const bottomItems = [
     { key: "messages", label: "Tin nhắn", icon: <MessageSquareIcon className="w-5 h-5" /> },
-    { key: "work", label: "Công việc", icon: <ClipboardListIcon className="w-5 h-5" /> },
+    // { key: "work", label: "Công việc", icon: <ClipboardListIcon className="w-5 h-5" /> },
     { key: "profile", label: "Cá nhân", icon: <UserIcon className="w-5 h-5" /> },
   ];
 
@@ -526,7 +526,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           mobileTab === "messages" && !!selectedChat
         ) && (
           <div className="absolute bottom-0 left-0 right-0 bg-white border-t">
-            <nav className="grid grid-cols-3">
+            <nav className="grid grid-cols-2">
               {bottomItems.map((item) => (
                 <button
                   key={item.key}
