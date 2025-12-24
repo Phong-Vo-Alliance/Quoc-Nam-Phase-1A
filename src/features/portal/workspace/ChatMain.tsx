@@ -190,6 +190,7 @@ onUpdateTaskChecklist?: (taskId: string, next: ChecklistItem[]) => void;
 
 // Checklist templates
 checklistTemplates?: ChecklistTemplateMap;
+setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap>>;
 }> = ({
   selectedGroup,
   currentUserId,
@@ -245,6 +246,7 @@ checklistTemplates?: ChecklistTemplateMap;
   onToggleChecklist,
   onUpdateTaskChecklist,
   checklistTemplates,
+  setChecklistTemplates,
 }) => {
   const [inputValue, setInputValue] = React.useState('');
   const [inlineToast, setInlineToast] = React.useState<string | null>(null);
@@ -398,7 +400,7 @@ checklistTemplates?: ChecklistTemplateMap;
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-800 truncate">{headerTitle}</div>
                 <div className="text-[11px] text-gray-500 truncate">
-                  {memberCount > 0 ? `${memberCount} thành viên` : 'Nhóm chat'} • <Badge type="waiting">Đang trao đổi</Badge>
+                  {memberCount > 0 ? `${memberCount} thành viên` : 'Nhóm chat'} {/* • <Badge type="waiting">Đang trao đổi</Badge> */}
                 </div>
               </div>
             </div>
@@ -448,19 +450,21 @@ checklistTemplates?: ChecklistTemplateMap;
                         <span className="text-sm font-normal">Công việc</span>
                       </button>
 
-                      <button
-                        className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
-                        onClick={() => {
-                          setOpenMobileMenu(false);
-                          setMobileChecklistOpen(true);
-                        }}
-                      >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full">
-                          <ListChecks className="h-4 w-4 text-brand-600" />
-                        </div>
-                        <span className="text-sm font-normal">Checklist mặc định</span>
-                      </button>
-                    </div>
+                      {viewMode === 'lead' && (
+                        <button
+                          className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
+                          onClick={() => {
+                            setOpenMobileMenu(false);
+                            setMobileChecklistOpen(true);
+                          }}
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                            <ListChecks className="h-4 w-4 text-brand-600" />
+                          </div>
+                          <span className="text-sm font-normal">Checklist mặc định</span>
+                        </button>
+                      )}
+                    </div>                      
                   </PopoverContent>
                 </Popover>
             </div>
@@ -779,7 +783,7 @@ checklistTemplates?: ChecklistTemplateMap;
       {/* Mobile Default Checklist Screen */}
       {isMobileLayout && mobileChecklistOpen && (
         <DefaultChecklistMobile
-        open={mobileChecklistOpen}
+          open={mobileChecklistOpen}
           onBack={() => setMobileChecklistOpen(false)}
           groupId={selectedGroup?.id}
           groupName={selectedGroup?.name ?? title}
@@ -789,9 +793,24 @@ checklistTemplates?: ChecklistTemplateMap;
           selectedWorkTypeId={selectedWorkTypeId ?? currentWorkTypeId}
           viewMode={viewMode}
           members={mobileMembers}
-          
-        />
-      )}
+
+          // Checklist template props
+          checklistTemplates={checklistTemplates}
+          checklistVariants={
+            selectedGroup?.workTypes?.find((w) => w.id === (selectedWorkTypeId ?? currentWorkTypeId))
+              ?.checklistVariants
+          }
+          onUpdateChecklistTemplate={(workTypeId, variantId, items) => {
+            setChecklistTemplates?.((prev) => ({
+              ...prev,
+              [workTypeId]: {
+                ...(prev[workTypeId] ?? {}),
+                [variantId]: items,
+              },
+            }));
+          }}
+  />
+)}
     </>
   );
 };

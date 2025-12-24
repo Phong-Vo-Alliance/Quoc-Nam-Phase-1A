@@ -437,7 +437,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     selectedChat={selectedChat}
                     onReceiveInfo={onReceiveInfo}
                     onAssignFromMessage={onAssignFromMessage}
-                    setTab={setTab}
+                    setTab={setTab}                    
                     receivedInfos={receivedInfos}
                     viewMode={viewMode}
                     tasks={tasks}
@@ -457,6 +457,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     onUpdateTaskChecklist={onUpdateTaskChecklist}
 
                     checklistTemplates={checklistTemplates}
+                    setChecklistTemplates={setChecklistTemplates}
                   />
                 </div>
               )}
@@ -659,6 +660,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           onUpdateTaskChecklist={onUpdateTaskChecklist}
 
           checklistTemplates={checklistTemplates}
+          setChecklistTemplates={setChecklistTemplates}
         />
       </div>
 
