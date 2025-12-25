@@ -40,6 +40,7 @@ import { mockMessagesByWorkType } from "@/data/mockMessages";
 import type { Phase1AFileItem } from '../components/FileManagerPhase1A';
 import { TabTaskMobile } from '../components/TabTaskMobile';
 import { DefaultChecklistMobile } from '../components/DefaultChecklistMobile';
+import { TaskBannerMobile } from '../components/TaskBannerMobile';
 
 type ViewMode = 'lead' | 'staff';
 
@@ -258,6 +259,64 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
   const [mobileInfoOpen, setMobileInfoOpen] = React.useState(false);
   const [mobileTaskOpen, setMobileTaskOpen] = React.useState(false);
   const [mobileChecklistOpen, setMobileChecklistOpen] = React.useState(false);
+
+  // Task banner data for staff
+  const staffPendingTasks = React.useMemo(() => {
+    if (viewMode !== 'staff' || !currentUserId || !isMobile) return [];
+
+    return tasks
+      .filter(t =>
+        t.assigneeId === currentUserId &&
+        (t.status === 'todo' || t.status === 'in_progress')
+      )
+      .sort((a, b) =>
+        // Sort by createdAt DESC (latest first)
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+  }, [tasks, currentUserId, viewMode, isMobile]);
+
+  // Latest task for banner display
+  const latestTask = staffPendingTasks[0];
+
+  const latestTaskWorkType = React.useMemo(() => {
+    if (!latestTask) return '';
+    const wt = workTypes.find(w => w.id === latestTask.workTypeId);
+    return wt?.name || 'Công việc';
+  }, [latestTask, workTypes]);
+
+  const latestTaskTitle = React.useMemo(() => {
+    if (!latestTask) return '';
+
+    const title = latestTask.title || latestTask.description || 'Việc mới';
+
+    // Smart truncation based on screen width
+    const maxLength = 25; // Adjust based on testing
+    return title.length > maxLength ? title.slice(0, maxLength) + '...' : title;
+  }, [latestTask]);
+
+  // Breakdown by work type
+  const taskBreakdownByWorkType = React.useMemo(() => {
+    const grouped = new Map<string, { todo: number; inProgress: number }>();
+
+    staffPendingTasks.forEach(task => {
+      const existing = grouped.get(task.workTypeId) || { todo: 0, inProgress: 0 };
+
+      if (task.status === 'todo') existing.todo++;
+      if (task.status === 'in_progress') existing.inProgress++;
+
+      grouped.set(task.workTypeId, existing);
+    });
+
+    return Array.from(grouped.entries()).map(([wtId, counts]) => {
+      const wt = workTypes.find(w => w.id === wtId);
+      return {
+        workTypeId: wtId,
+        workTypeName: wt?.name || 'Công việc',
+        todoCount: counts.todo,
+        inProgressCount: counts.inProgress,
+      };
+    });
+  }, [staffPendingTasks, workTypes]);
 
   const composerRef = React.useRef<HTMLDivElement | null>(null);
   const [sheetBottom, setSheetBottom] = React.useState<number>(130);
@@ -518,6 +577,24 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
           </>
         )}
       </div>
+
+      {/* NEW: Task Banner for Mobile Staff */}
+      {isMobileLayout && viewMode === 'staff' && (
+        <TaskBannerMobile
+          visible={staffPendingTasks.length > 0}
+          workType={latestTaskWorkType}
+          taskTitle={latestTaskTitle}
+          totalCount={staffPendingTasks.length}
+          breakdown={taskBreakdownByWorkType}
+          onViewWorkType={(workTypeId) => {
+            // Switch to the specific WorkType tab
+            onChangeWorkType ?.(workTypeId);
+
+            // Open task panel
+            setMobileTaskOpen(true);
+          }}
+        />
+      )}
 
       {/* WorkType tabs (mobile) */}
       {isMobileLayout && selectedGroup?.workTypes && selectedGroup.workTypes.length > 0 && (
