@@ -5,6 +5,7 @@ import { RightPanel } from "./RightPanel";
 import { PinnedMessagesPanel } from "../components/PinnedMessagesPanel";
 import { QuickMessageManagerMobile } from "../components/QuickMessageManagerMobile";
 import { TodoListManagerMobile } from "../components/TodoListManagerMobile";
+import { PinnedMessagesManagerMobile } from "../components/PinnedMessagesManagerMobile";
 
 import type {
   Task,
@@ -352,6 +353,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
   if (isMobile) {
     const [showQuickMessageMobile, setShowQuickMessageMobile] = React.useState(false);
     const [showTodoListMobile, setShowTodoListMobile] = React.useState(false);
+    const [showPinnedMessagesMobile, setShowPinnedMessagesMobile] = React.useState(false);
 
     return (
       <div className={`relative flex h-full flex-col bg-gray-50 ${mobileTab === "messages" && selectedChat ? "pb-0" : "pb-12"}`}>
@@ -383,7 +385,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     onSelectChat={handleMobileSelectChat}
                     isMobile={true}
                     onOpenQuickMsg={() => setShowQuickMessageMobile(true)} 
-                    onOpenPinned={onOpenPinned}
+                    onOpenPinned={() => setShowPinnedMessagesMobile(true)} 
                     onOpenTodoList={() => setShowTodoListMobile(true)}
                   />
                 </div>
@@ -560,6 +562,22 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
           <TodoListManagerMobile
             open={showTodoListMobile} 
             onClose={() => setShowTodoListMobile(false)}
+          />
+        )}
+
+        {/* ✅ NEW: Pinned Messages Modal */}
+        {showPinnedMessagesMobile && (
+          <PinnedMessagesManagerMobile
+            open={showPinnedMessagesMobile}
+            onClose={() => setShowPinnedMessagesMobile(false)}
+            pinnedMessages={pinnedMessages ?? []}
+            onUnpin={onUnpinMessage}
+            onOpenChat={(pin) => {
+              setShowPinnedMessagesMobile(false);
+              handleMobileSelectChat({ type: "group", id: pin.chatId });
+              onOpenSourceMessage?.(pin.id);
+            }}
+            onPreview={(file) => openPreview?.(file as any)}
           />
         )}
       </div>
