@@ -14,6 +14,7 @@ import { AssignTaskSheet } from '@/components/sheet/AssignTaskSheet';
 import { GroupTransferSheet } from "@/components/sheet/GroupTransferSheet";
 import type { ChecklistTemplateMap, ChecklistTemplateItem } from './types';
 import { TaskLogThreadSheet } from "./workspace/TaskLogThreadSheet";
+import { WorkTypeManagerDialog } from './components/WorkTypeManagerDialog';
 
 type PortalMode = "desktop" | "mobile";
 
@@ -49,6 +50,9 @@ export default function PortalWireframes({ portalMode = "desktop" }: PortalWiref
   }>({
     open: false,
   });
+
+  // WorkType Manager state
+  const [showWorkTypeManager, setShowWorkTypeManager] = useState(false);
  
 
   // sẽ tính workTypes theo selectedGroup bên dưới
@@ -187,8 +191,11 @@ export default function PortalWireframes({ portalMode = "desktop" }: PortalWiref
 
   const [tasks, setTasks] = React.useState(() => structuredClone(mockTasks));
 
-  const currentUser = 'Diễm Chi';
-  const currentUserId = 'u_diem_chi';
+  // Dynamic user based on viewMode
+  const currentUser = viewMode === 'lead' ? 'Thanh Trúc' : 'Diễm Chi';
+  const currentUserId = viewMode === 'lead' ? 'u_thanh_truc' : 'u_diem_chi';
+  const currentUserDepartment = viewMode === 'lead' ? 'Quản lý vận hành' : 'Nhân viên kho';
+
   const members = ['Thu An', 'Lệ Bình', 'Diễm Chi'];
   //const now = new Date().toISOString();
   const nowIso = () => new Date().toISOString();
@@ -858,6 +865,40 @@ const handleOpenSourceMessage = React.useCallback(
     pushToast("Đã giao công việc.", 'success');
   };
 
+  // Handler:  Update group's workTypes
+  const handleUpdateGroupWorkTypes = (groupId: string, updatedWorkTypes: WorkType[]) => {
+    // 1. Update groups array
+    const newGroups = groups.map((g) =>
+      g.id === groupId ? { ...g, workTypes: updatedWorkTypes } : g
+    );
+
+    // Note: Since groups is const from useState, we need to update via parent
+    // For now, we'll update local selectedGroup if it matches
+    if (selectedGroup?.id === groupId) {
+      setSelectedGroup({
+        ...selectedGroup,
+        workTypes: updatedWorkTypes,
+      });
+
+      // If current workType no longer exists, switch to first available or default
+      const currentWorkTypeStillExists = updatedWorkTypes.some(
+        (wt) => wt.id === selectedWorkTypeId
+      );
+
+      if (!currentWorkTypeStillExists) {
+        const newDefaultId =
+          updatedWorkTypes.find((wt) => wt.id === selectedGroup.defaultWorkTypeId)?.id ??
+          updatedWorkTypes[0]?.id;
+
+        if (newDefaultId) {
+          setSelectedWorkTypeId(newDefaultId);
+        }
+      }
+    }
+
+    pushToast("Đã cập nhật loại việc.", "success");
+  };
+
   const handleGroupTransferConfirm = ({
     infoId,
     toGroupId,
@@ -937,6 +978,36 @@ const handleOpenSourceMessage = React.useCallback(
     }));
   };
 
+  // Helper:  Get groups where user is Leader
+  const leaderGroups = React.useMemo(() => {    
+    return groups.filter((g) =>
+      g.members?.some((m) => m.userId === currentUserId && m.role === "leader")
+    );
+  }, [groups, currentUserId]);
+
+  //DEBUG:
+  // const leaderGroups = React.useMemo(() => {
+  //   console.log("🔍 DEBUG leaderGroups:", {
+  //     currentUserId,
+  //     totalGroups: groups.length,
+  //     groupsWithMembers: groups.filter(g => g.members && g.members.length > 0).length,
+  //     sampleGroup: groups[0],
+  //   });
+
+  //   const filtered = groups.filter((g) => {
+  //     const hasLeader = g.members?.some((m) => {
+  //       console.log("  Checking member:", m, "against userId:", currentUserId);
+  //       return m.userId === currentUserId && m.role === "leader";
+  //     });
+
+  //     console.log(`  Group "${g.name}": hasLeader=${hasLeader}`);
+  //     return hasLeader;
+  //   });
+
+  //   console.log("✅ Filtered leaderGroups:", filtered.length, filtered);
+  //   return filtered;
+  // }, [groups, currentUserId]);
+
   // --- Task log sheet: task + message gốc + danh sách log ---
   const activeTaskLogTask = React.useMemo(
     () => (taskLogSheet.taskId ? tasks.find(t => t.id === taskLogSheet.taskId) : undefined),
@@ -954,6 +1025,7 @@ const handleOpenSourceMessage = React.useCallback(
       : [];
 
   return (
+    
     <div
       className={`${
         portalMode === "mobile" ? "w-full h-full" : "w-screen h-screen"
@@ -1004,6 +1076,7 @@ const handleOpenSourceMessage = React.useCallback(
 
           showPinnedToast={showPinnedToast}
           currentUserName={currentUser}
+          onOpenWorkTypeManager={() => setShowWorkTypeManager(true)}
         />
       )}
       
@@ -1100,8 +1173,9 @@ const handleOpenSourceMessage = React.useCallback(
             defaultChecklistVariantId={defaultChecklistVariantId}
             onCreateTaskFromMessage={handleCreateTask}
             
-            onReassignTask={undefined}  // hoặc implement nếu cần           
+            onReassignTask={undefined}  // hoặc implement nếu cần
             
+            onOpenWorkTypeManager={() => setShowWorkTypeManager(true)}            
           />          
         ) : (
           <TeamMonitorView
@@ -1163,6 +1237,17 @@ const handleOpenSourceMessage = React.useCallback(
         {/* Toasts */}
         <ToastContainer toasts={toasts} onClose={removeToast} />
       </div>
+
+
+      {/* WorkType Manager Dialog (Desktop only) */}
+      {portalMode !== "mobile" && (
+        <WorkTypeManagerDialog
+          open={showWorkTypeManager}
+          onOpenChange={setShowWorkTypeManager}
+          groups={leaderGroups}
+          onSave={handleUpdateGroupWorkTypes}
+        />
+      )}
     </div>
   );
 

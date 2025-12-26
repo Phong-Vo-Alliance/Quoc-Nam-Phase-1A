@@ -137,6 +137,8 @@ interface WorkspaceViewProps {
 
   // Checklist templates
   checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
+
+  onOpenWorkTypeManager?: () => void;
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
@@ -210,6 +212,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onToggleChecklist,
     onUpdateTaskChecklist,
     checklistTemplates,
+
+    onOpenWorkTypeManager,
   } = props;
 
   const isMobile = layoutMode === "mobile";

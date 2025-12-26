@@ -10,6 +10,7 @@ import {
   AlarmClock,
   ListTodo,
   User as UserIcon,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import QuocnamLogo from "@/assets/Quocnam_logo.png";
@@ -44,6 +45,8 @@ interface MainSidebarProps {
     pendingUntil?: string;
   }[];
   showPinnedToast: boolean;
+
+  onOpenWorkTypeManager?: () => void;
 }
 
 export const MainSidebar: React.FC<MainSidebarProps> = ({
@@ -54,6 +57,7 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
   pendingTasks: initialPending = [],
   showPinnedToast,
   currentUserName = "Diễm My",
+  onOpenWorkTypeManager,
 }) => {
   const [openTools, setOpenTools] = React.useState(false);
   const [openQuickMsg, setOpenQuickMsg] = React.useState(false);  
@@ -249,6 +253,22 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                 </div>
                 <span className="text-xs font-medium">Danh sách việc cần làm</span>
               </div>
+
+              {/* Quản lý loại việc (Leader only) */}
+              {viewMode === 'lead' && (
+                <div
+                  className="flex flex-col items-center text-center text-gray-500 hover:text-brand-700 cursor-pointer"
+                  onClick={() => {
+                    setOpenTools(false);
+                    onOpenWorkTypeManager?.();
+                  }}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 mb-1">
+                    <Settings className="h-5 w-5 text-brand-600" />
+                  </div>
+                  <span className="text-xs font-medium">Quản lý loại việc</span>
+                </div>
+              )}
             </div>
           </PopoverContent>
         </Popover>
@@ -274,6 +294,16 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                 Xin chào {currentUserName}
               </div>
             </div>
+            
+            <div className="mt-1">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${viewMode === 'lead'
+                  ? 'bg-brand-100 text-brand-700'
+                  : 'bg-gray-100 text-gray-700'
+                }`}>
+                {viewMode === 'lead' ? '🎖️ Trưởng nhóm' : '👤 Nhân viên'}
+              </span>
+            </div>
+  
             <div className="mt-1">
               <button
                 onClick={() => {

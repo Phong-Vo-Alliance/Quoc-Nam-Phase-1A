@@ -264,9 +264,11 @@ export const mockGroup_VH_TaiXe: GroupChat = {
   departmentIds: ["dep_van_hanh", "dep_tai_xe"],
   members: [
     // Leaders auto-join theo rule
+    { userId: "u_thanh_truc", role: "leader", isAutoJoined: true, joinedAt: iso() }, // leader Vận Hành
     { userId: "u_huyen", role: "leader", isAutoJoined: true, joinedAt: iso() }, // leader Vận Hành
     // Staff do leader add vào
     { userId: "u_ngoc_vang", role: "staff", isAutoJoined: false, joinedAt: iso(), addedById: "u_huyen" },
+    { userId: "u_thu_an",        role: "staff", isAutoJoined: false, joinedAt: iso(), addedById: "u_thanh_truc"  },
   ],
   workTypes: [wtDonBocHang, wtLichBocHang],
   defaultWorkTypeId: wtDonBocHang.id,
