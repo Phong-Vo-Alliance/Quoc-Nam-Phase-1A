@@ -3,6 +3,8 @@ import { LeftSidebar } from "./LeftSidebar";
 import { ChatMain } from "./ChatMain";
 import { RightPanel } from "./RightPanel";
 import { PinnedMessagesPanel } from "../components/PinnedMessagesPanel";
+import { QuickMessageManagerMobile } from "../components/QuickMessageManagerMobile";
+import { TodoListManagerMobile } from "../components/TodoListManagerMobile";
 
 import type {
   Task,
@@ -348,6 +350,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
   };
 
   if (isMobile) {
+    const [showQuickMessageMobile, setShowQuickMessageMobile] = React.useState(false);
+    const [showTodoListMobile, setShowTodoListMobile] = React.useState(false);
+
     return (
       <div className={`relative flex h-full flex-col bg-gray-50 ${mobileTab === "messages" && selectedChat ? "pb-0" : "pb-12"}`}>
         <div className="flex-1 min-h-0">
@@ -377,9 +382,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     contacts={contacts}
                     onSelectChat={handleMobileSelectChat}
                     isMobile={true}
-                    onOpenQuickMsg={onOpenQuickMsg}
+                    onOpenQuickMsg={() => setShowQuickMessageMobile(true)} 
                     onOpenPinned={onOpenPinned}
-                    onOpenTodoList={onOpenTodoList}
+                    onOpenTodoList={() => setShowTodoListMobile(true)}
                   />
                 </div>
               ) : (
@@ -541,6 +546,21 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
               ))}
             </nav>
           </div>
+        )}
+
+        {/* Quick Message Modal */}
+        {showQuickMessageMobile && (
+          <QuickMessageManagerMobile
+            open={showQuickMessageMobile}
+            onClose={() => setShowQuickMessageMobile(false)}
+          />
+        )}
+        {/* Todo List Modal */}
+        {showTodoListMobile && (
+          <TodoListManagerMobile
+            open={showTodoListMobile} 
+            onClose={() => setShowTodoListMobile(false)}
+          />
         )}
       </div>
     );
