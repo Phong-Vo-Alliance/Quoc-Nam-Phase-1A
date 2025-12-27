@@ -308,9 +308,14 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
       <Sheet open={showFilter} onOpenChange={setShowFilter}>
         <SheetContent
           side="bottom"
-          className="fixed left-1/2 -translate-x-1/2 -translate-y-1/3 z-[999] rounded-t-2xl p-0 h-[40vh] w-[20vw] flex flex-col"
+          className="rounded-t-2xl p-0 h-[40vh] w-[92vw] max-w-[430px] left-1/2 -translate-x-1/2 -translate-y-1/3  flex flex-col"
+          style={{
+            position: 'fixed',
+            bottom: 0,            
+            zIndex: 9998,
+          }}
         >
-          <SheetHeader className="px-4 py-4 border-b">
+          <SheetHeader className="px-4 py-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between">
               <SheetTitle>Bộ lọc</SheetTitle>
               {hasActiveFilters && (
@@ -330,7 +335,7 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
             </div>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
             {/* Người gửi */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -340,7 +345,14 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Chọn người gửi" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  position="popper"
+                  side="top"
+                  align="start"
+                  className="z-[9999] max-h-[180px] overflow-y-auto"
+                  sideOffset={4}
+                  avoidCollisions={true}
+                >
                   <SelectItem value="all">Tất cả</SelectItem>
                   {senders.map((s) => (
                     <SelectItem key={s} value={s}>
@@ -362,12 +374,19 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Chọn khoảng thời gian" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  position="popper"
+                  side="top"
+                  align="start"
+                  className="z-[9999] max-h-[180px] overflow-y-auto"
+                  sideOffset={4}
+                  avoidCollisions={true}
+                >
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="7">7 ngày gần đây</SelectItem>
                   <SelectItem value="15">15 ngày gần đây</SelectItem>
                   <SelectItem value="30">30 ngày gần đây</SelectItem>
-                  <SelectItem value="custom">Tùy chỉnh... </SelectItem>
+                  <SelectItem value="custom">Tùy chỉnh...</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -384,7 +403,7 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
                       size="sm"
                       onClick={() => {
                         const now = new Date();
-                        const from = new Date(now. getTime() - d * 24 * 60 * 60 * 1000);
+                        const from = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
                         setDateRange({
                           from: from.toISOString().split("T")[0],
                           to: now.toISOString().split("T")[0],
@@ -397,25 +416,38 @@ export const AllFilesScreenMobile: React.FC<AllFilesScreenMobileProps> = ({
                   ))}
                 </div>
 
-                {/* Date pickers would go here - simplified for mobile */}
-                <div className="text-xs text-gray-400 text-center py-4">
-                  Calendar picker sẽ được tích hợp ở đây
-                </div>
+                {/* Date range display */}
+                {(dateRange.from || dateRange.to) && (
+                  <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3">
+                    <div className="font-medium mb-1">Khoảng thời gian đã chọn:</div>
+                    <div>
+                      {dateRange.from && (
+                        <span>Từ {new Date(dateRange.from).toLocaleDateString("vi-VN")}</span>
+                      )}
+                      {dateRange.from && dateRange.to && <span> - </span>}
+                      {dateRange.to && (
+                        <span>đến {new Date(dateRange.to).toLocaleDateString("vi-VN")}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-            <Button
-              onClick={() => setShowFilter(false)}
-              className="w-full"
-            >
-              Áp dụng bộ lọc
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+    {/* Footer */}
+    <div className="border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex-shrink-0 bg-white">
+      <Button
+        onClick={() => setShowFilter(false)}
+        className="w-full"
+      >
+        Áp dụng bộ lọc
+      </Button>
+    </div>
+  </SheetContent>
+</Sheet>
+      
+      
     </div>
   );
 };

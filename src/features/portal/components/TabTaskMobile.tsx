@@ -107,6 +107,8 @@ const MobileTaskCard: React.FC<{
   const doneCount = t.checklist?. filter((c) => c.done).length ?? 0;
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
+  const canEditStructure = viewMode === "lead" && (t.status === "todo" || t.status === "in_progress");
+
   const assigneeName = members.find((m) => m.id === t.assigneeId)?.name ?? t.assigneeId;  
 
   return (
@@ -324,7 +326,7 @@ const MobileTaskCard: React.FC<{
                 </span>
 
                 {/* Edit/Delete buttons - ONLY for Leader + Todo */}
-                {viewMode === "lead" && t.status === "todo" && (
+                {canEditStructure && (
                   <div className="flex gap-1">
                     <button
                       onClick={() => {
@@ -351,7 +353,7 @@ const MobileTaskCard: React.FC<{
             ))}
 
             {/* Add New Item Button - ONLY for Leader + Todo */}
-            {viewMode === "lead" && t.status === "todo" && (
+            {canEditStructure && (
               <button
                 onClick={() => {
                   setEditingItem({ id: "new", label: "", done: false });

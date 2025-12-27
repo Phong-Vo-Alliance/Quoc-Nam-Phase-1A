@@ -3,6 +3,9 @@ import { LeftSidebar } from "./LeftSidebar";
 import { ChatMain } from "./ChatMain";
 import { RightPanel } from "./RightPanel";
 import { PinnedMessagesPanel } from "../components/PinnedMessagesPanel";
+import { QuickMessageManagerMobile } from "../components/QuickMessageManagerMobile";
+import { TodoListManagerMobile } from "../components/TodoListManagerMobile";
+import { PinnedMessagesManagerMobile } from "../components/PinnedMessagesManagerMobile";
 
 import type {
   Task,
@@ -134,6 +137,8 @@ interface WorkspaceViewProps {
 
   // Checklist templates
   checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
+
+  onOpenWorkTypeManager?: () => void;
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
@@ -207,6 +212,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onToggleChecklist,
     onUpdateTaskChecklist,
     checklistTemplates,
+
+    onOpenWorkTypeManager,
   } = props;
 
   const isMobile = layoutMode === "mobile";
@@ -348,6 +355,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
   };
 
   if (isMobile) {
+    const [showQuickMessageMobile, setShowQuickMessageMobile] = React.useState(false);
+    const [showTodoListMobile, setShowTodoListMobile] = React.useState(false);
+    const [showPinnedMessagesMobile, setShowPinnedMessagesMobile] = React.useState(false);
+
     return (
       <div className={`relative flex h-full flex-col bg-gray-50 ${mobileTab === "messages" && selectedChat ? "pb-0" : "pb-12"}`}>
         <div className="flex-1 min-h-0">
@@ -377,9 +388,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
                     contacts={contacts}
                     onSelectChat={handleMobileSelectChat}
                     isMobile={true}
-                    onOpenQuickMsg={onOpenQuickMsg}
-                    onOpenPinned={onOpenPinned}
-                    onOpenTodoList={onOpenTodoList}
+                    onOpenQuickMsg={() => setShowQuickMessageMobile(true)} 
+                    onOpenPinned={() => setShowPinnedMessagesMobile(true)} 
+                    onOpenTodoList={() => setShowTodoListMobile(true)}
                   />
                 </div>
               ) : (
@@ -541,6 +552,37 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
               ))}
             </nav>
           </div>
+        )}
+
+        {/* Quick Message Modal */}
+        {showQuickMessageMobile && (
+          <QuickMessageManagerMobile
+            open={showQuickMessageMobile}
+            onClose={() => setShowQuickMessageMobile(false)}
+          />
+        )}
+        {/* Todo List Modal */}
+        {showTodoListMobile && (
+          <TodoListManagerMobile
+            open={showTodoListMobile} 
+            onClose={() => setShowTodoListMobile(false)}
+          />
+        )}
+
+        {/* ✅ NEW: Pinned Messages Modal */}
+        {showPinnedMessagesMobile && (
+          <PinnedMessagesManagerMobile
+            open={showPinnedMessagesMobile}
+            onClose={() => setShowPinnedMessagesMobile(false)}
+            pinnedMessages={pinnedMessages ?? []}
+            onUnpin={onUnpinMessage}
+            onOpenChat={(pin) => {
+              setShowPinnedMessagesMobile(false);
+              handleMobileSelectChat({ type: "group", id: pin.chatId });
+              onOpenSourceMessage?.(pin.id);
+            }}
+            onPreview={(file) => openPreview?.(file as any)}
+          />
         )}
       </div>
     );
