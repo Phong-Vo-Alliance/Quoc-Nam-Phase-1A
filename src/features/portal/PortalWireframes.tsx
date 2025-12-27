@@ -189,7 +189,32 @@ export default function PortalWireframes({ portalMode = "desktop" }: PortalWiref
   // Checklist Template theo WorkType + Variant
   const [checklistTemplates, setChecklistTemplates] = React.useState<ChecklistTemplateMap>(mockChecklistTemplatesByVariant);
 
-  const [tasks, setTasks] = React.useState(() => structuredClone(mockTasks));
+  // Thêm task dành cho leader để test
+  const testLeaderTask: Task = {
+    id: "task_leader_test_001",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_test",
+    title: "Kiểm tra báo cáo kho tháng 11",
+    description: "Admin yêu cầu leader review báo cáo tổng hợp",
+    assigneeId: "u_thanh_truc", // ✅ Assigned to leader
+    assignedById: "u_admin",
+    status: "todo",
+    priority: "high",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    checklist: [
+      { id: "chk_l1", label: "Xem báo cáo Excel", done: false },
+      { id: "chk_l2", label: "So sánh với tháng trước", done: false },
+      { id: "chk_l3", label: "Gửi feedback cho Admin", done: false },
+    ],
+    history: [],
+  };
+
+  // Add to tasks state
+  const [tasks, setTasks] = React.useState(() =>
+    structuredClone([...mockTasks, testLeaderTask])
+  );
 
   // Dynamic user based on viewMode
   const currentUser = viewMode === 'lead' ? 'Thanh Trúc' : 'Diễm Chi';
