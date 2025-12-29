@@ -143,10 +143,29 @@ export default function PortalWireframes({ portalMode = "desktop" }: PortalWiref
     setMessages(filtered);
   }, [selectedGroup?.id, selectedWorkTypeId]);
 
+  React.useEffect(() => {
+    const messagesWithTasks = messages.filter(m => m.taskId);
+
+    if (messagesWithTasks.length === 0) return;
+
+    setTaskLogs(prev => {
+      const updated = { ...prev };
+      let hasChanges = false;
+
+      messagesWithTasks.forEach(m => {
+        if (m.taskId && !updated[m.taskId]) {
+          updated[m.taskId] = [];
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [messages]);
+
   // const [selectedWorkTypeId, setSelectedWorkTypeId] =
   //   React.useState<string>(defaultWorkTypeId);
 
-  
 
   // (1) mock data cho sidebar
   const [groups] = React.useState(groupsMerged);
@@ -857,15 +876,14 @@ const handleOpenSourceMessage = React.useCallback(
 
 
     setTasks((prev) => [...prev, newTask]);
-    setTab("tasks");
-    setShowRight(true);
 
+    // 2. Initialize taskLogs IMMEDIATELY
     setTaskLogs((prev) => ({
       ...prev,
       [newTask.id]: [],
     }));
 
-    // Liên kết task mới với message gốc (nếu có)    
+    // 3. Liên kết task mới với message gốc (nếu có)    
     if (sourceMessageId) {      
       setMessages(prev =>
         prev.map(m =>
@@ -876,7 +894,11 @@ const handleOpenSourceMessage = React.useCallback(
       );
     }
 
-    // Nếu assign từ ReceivedInfo → đổi trạng thái
+    // 4. Update UI state
+    setTab("tasks");
+    setShowRight(true);
+
+    // 5. Nếu assign từ ReceivedInfo → đổi trạng thái
     if (assignSheet.source === "receivedInfo" && assignSheet.info) {
       setReceivedInfos((prev) =>
         prev.map((i) =>
