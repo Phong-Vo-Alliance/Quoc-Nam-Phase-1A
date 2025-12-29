@@ -385,9 +385,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
       </div>
 
-      {data.taskId && taskLogs?.[data.taskId] && (
+      {data.taskId && taskLogs?.[data.taskId] && (        
         <div
-          className="mt-1 ml-10 cursor-pointer text-[11px] text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          className={cn("mt-1 ml-10 cursor-pointer text-[11px] text-gray-500 hover:text-gray-700 flex items-center gap-1", data.isMine ? "justify-end" : "justify-start")}
           onClick={() => {
             if (isMobileLayout && onOpenTaskLogMobile) {
               onOpenTaskLogMobile(data.taskId!);

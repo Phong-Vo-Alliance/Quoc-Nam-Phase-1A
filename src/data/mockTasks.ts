@@ -220,4 +220,211 @@ export const mockTasks: Task[] = [
     // 5 ngày trước + 3h
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 117).toISOString(),
   },
+  
+
+  // =========================
+  // LEADER OWN TASKS (u_thanh_truc)
+  // =========================
+
+  // 1. TODO task for leader
+  {
+    id: "task_leader_001",
+    title: "Phê duyệt kế hoạch nhập hàng tháng 12",
+    description: "Xem xét và phê duyệt kế hoạch nhập hàng từ phòng mua hàng",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0030",
+    assigneeId: "u_thanh_truc", // ✅ Leader
+    assignedById: "u_admin",
+    status: "todo",
+    checklist: [
+      { id: "chk_l001_1", label: "Xem báo cáo tồn kho hiện tại", done: false },
+      { id: "chk_l001_2", label: "So sánh với dự báo bán hàng", done: false },
+      { id: "chk_l001_3", label: "Phê duyệt hoặc yêu cầu điều chỉnh", done: false },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 phút trước
+    updatedAt: new Date().toISOString(),
+  },
+
+  // 2. IN_PROGRESS task for leader
+  {
+    id: "task_leader_002",
+    title: "Đánh giá hiệu suất team tháng 11",
+    description: "Tổng hợp KPI và đánh giá từng thành viên",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0031",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "in_progress",
+    checklist: [
+      { id: "chk_l002_1", label: "Thu thập dữ liệu KPI", done: true },
+      { id: "chk_l002_2", label: "Viết nhận xét cho từng người", done: false },
+      { id: "chk_l002_3", label: "Gửi báo cáo cho giám đốc", done: false },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 phút trước
+  },
+
+  // 3. DONE TODAY task for leader
+  {
+    id: "task_leader_003",
+    title: "Họp với NCC về chất lượng hàng hóa",
+    description: "Cuộc họp buổi sáng với NCC CP về vấn đề đổi trả",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0032",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l003_1", label: "Chuẩn bị tài liệu họp", done: true },
+      { id: "chk_l003_2", label: "Tham gia cuộc họp", done: true },
+      { id: "chk_l003_3", label: "Gửi biên bản họp", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), // 8 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), // 4 giờ trước (hôm nay)
+  },
+
+  // 4. DONE TODAY task #2 for leader
+  {
+    id: "task_leader_004",
+    title: "Kiểm tra báo cáo tồn kho tuần",
+    description: "Xác nhận số liệu tồn kho cuối tuần",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0033",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l004_1", label: "Đối chiếu số liệu hệ thống", done: true },
+      { id: "chk_l004_2", label: "Xác nhận với kế toán", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), // 6 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 giờ trước
+  },
+
+  // =========================
+  // PAST COMPLETED TASKS (Leader)
+  // =========================
+
+  // 5. Yesterday
+  {
+    id: "task_leader_005",
+    title: "Phê duyệt đề xuất mua thiết bị kho",
+    description: "Duyệt đơn mua 3 xe nâng mới",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0034",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l005_1", label: "Xem báo giá từ 3 nhà cung cấp", done: true },
+      { id: "chk_l005_2", label: "So sánh chất lượng", done: true },
+      { id: "chk_l005_3", label: "Phê duyệt NCC tốt nhất", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), // 30 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), // 26 giờ trước (hôm qua)
+  },
+
+  // 6. 2 days ago
+  {
+    id: "task_leader_006",
+    title: "Đào tạo quy trình mới cho team",
+    description: "Hướng dẫn team về quy trình nhập kho điện tử",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0035",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l006_1", label: "Chuẩn bị slide đào tạo", done: true },
+      { id: "chk_l006_2", label: "Tổ chức buổi training", done: true },
+      { id: "chk_l006_3", label: "Thu thập feedback", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 52).toISOString(), // 52 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 48 giờ trước (2 ngày)
+  },
+
+  // 7. 3 days ago
+  {
+    id: "task_leader_007",
+    title: "Xử lý khiếu nại từ phòng bán hàng",
+    description: "Giải quyết vấn đề thiếu hàng trong đơn POS-9876",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0036",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l007_1", label: "Điều tra nguyên nhân thiếu hàng", done: true },
+      { id: "chk_l007_2", label: "Phối hợp với NCC bổ sung", done: true },
+      { id: "chk_l007_3", label: "Thông báo kết quả cho bán hàng", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 76).toISOString(), // 76 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 72 giờ trước (3 ngày)
+  },
+
+  // 8. 5 days ago
+  {
+    id: "task_leader_008",
+    title: "Lập kế hoạch kiểm kê cuối tháng",
+    description: "Chuẩn bị kế hoạch kiểm kê tồn kho tháng 11",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0037",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l008_1", label: "Phân công nhân viên kiểm kê", done: true },
+      { id: "chk_l008_2", label: "Chuẩn bị checklist kiểm đếm", done: true },
+      { id: "chk_l008_3", label: "Gửi kế hoạch cho giám đốc", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 124).toISOString(), // 124 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), // 120 giờ trước (5 ngày)
+  },
+
+  // 9. 7 days ago
+  {
+    id: "task_leader_009",
+    title: "Đánh giá NCC tháng 11",
+    description: "Tổng hợp và đánh giá hiệu suất các nhà cung cấp",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0038",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l009_1", label: "Thu thập dữ liệu giao hàng đúng hạn", done: true },
+      { id: "chk_l009_2", label: "Tính toán tỷ lệ lỗi hàng hóa", done: true },
+      { id: "chk_l009_3", label: "Gửi báo cáo đánh giá NCC", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 172).toISOString(), // 172 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 168).toISOString(), // 168 giờ trước (7 ngày)
+  },
+
+  // 10. 10 days ago
+  {
+    id: "task_leader_010",
+    title: "Họp ban lãnh đạo về chiến lược Q4",
+    description: "Tham gia cuộc họp chiến lược kinh doanh quý 4",
+    groupId: "grp_vh_kho",
+    workTypeId: "wt_nhan_hang",
+    sourceMessageId: "msg_0039",
+    assigneeId: "u_thanh_truc",
+    assignedById: "u_admin",
+    status: "done",
+    checklist: [
+      { id: "chk_l010_1", label: "Chuẩn bị báo cáo vận hành kho Q3", done: true },
+      { id: "chk_l010_2", label: "Đề xuất cải tiến quy trình", done: true },
+    ],
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 244).toISOString(), // 244 giờ trước
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 240).toISOString(), // 240 giờ trước (10 ngày)
+  },
 ];

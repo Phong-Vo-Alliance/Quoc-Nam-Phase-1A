@@ -16,13 +16,17 @@ import {
   MoveRight,
   Edit2, Trash2, ArrowLeft,
   ChevronDown, ChevronRight, Check,
-  ClipboardList, SquarePen, ListTodo
+  ClipboardList, SquarePen, ListTodo, UserIcon,
 } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 
 import { Button } from "@/components/ui/button";
 import { HintBubble } from "../components/HintBubble";
@@ -109,13 +113,25 @@ const TaskCard: React.FC<{
   t: Task;
   members: MinimalMember[];
   viewMode: ViewMode;
+  isLeaderOwnTask?: boolean; // Flag when leader is task owner
   onChangeStatus?: (id: string, next: Task["status"]) => void;
-  onReassign?: (id: string, assigneeId: string) => void;
-  onToggleChecklist?: (taskId: string, itemId: string, done: boolean) => void;
+  onReassign?: (id:  string, assigneeId: string) => void;
+  onToggleChecklist?: (taskId: string, itemId: string, done:  boolean) => void;
   onUpdateTaskChecklist?: (taskId: string, next: ChecklistItem[]) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
   onOpenTaskLog?: (taskId: string) => void;
-}> = ({ t, members, viewMode, onChangeStatus, onReassign, onToggleChecklist, onUpdateTaskChecklist, taskLogs, onOpenTaskLog }) => {
+}> = ({ 
+  t, 
+  members, 
+  viewMode, 
+  isLeaderOwnTask = false,
+  onChangeStatus, 
+  onReassign, 
+  onToggleChecklist, 
+  onUpdateTaskChecklist, 
+  taskLogs, 
+  onOpenTaskLog 
+}) => {
   const [open, setOpen] = React.useState(false);
   const assigneeName = members.find((m) => m.id === t.assigneeId)?.name ?? t.assigneeId;
   const [editingItem, setEditingItem] = React.useState<ChecklistItem | null>(null);
@@ -422,48 +438,94 @@ const TaskCard: React.FC<{
               )}
             </div>
 
-            {/* BÊN PHẢI: nhóm action buttons cùng 1 hàng */}
+            {/* BÊN PHẢI:  action buttons */}
             <div className="flex items-center gap-2">
               {/* NÚT NHẬT KÝ – luôn enable */}
               <button
                 onClick={() => onOpenTaskLog?.(t.id)}
                 className="
                   px-2 py-1 rounded-md border text-[11px]
-                  border-emerald-300 text-emerald-700 hover:bg-emerald-50
+                  border-emerald-300 text-emerald-700 hover: bg-emerald-50
                 "
               >
                 Nhật ký
               </button>
 
-              {viewMode === "staff" && t.status === "todo" && (
-                <button
-                  onClick={() => onChangeStatus?.(t.id, "in_progress")}
-                  className="rounded-md border px-2 py-0.5 text-[11px] hover:bg-emerald-50"
-                >
-                  Bắt đầu
-                </button>
+              {/* ============================================
+                  STAFF VIEW (unchanged)
+                  ============================================ */}
+              {viewMode === "staff" && (
+                <>
+                  {t.status === "todo" && (
+                    <button
+                      onClick={() => onChangeStatus?.(t.id, "in_progress")}
+                      className="rounded-md border px-2 py-0.5 text-[11px] hover:bg-emerald-50"
+                    >
+                      Bắt đầu
+                    </button>
+                  )}
+
+                  {t.status === "in_progress" && (
+                    <button
+                      onClick={() => onChangeStatus?.(t.id, "awaiting_review")}
+                      className="rounded-md border px-2 py-0.5 text-[11px] hover: bg-amber-50"
+                    >
+                      Chờ duyệt
+                    </button>
+                  )}
+
+                  {/* Staff không có button cho awaiting_review */}
+                </>
               )}
 
-              {viewMode === "staff" && t.status === "in_progress" && (
-                <button
-                  onClick={() => onChangeStatus?.(t.id, "awaiting_review")}
-                  className="rounded-md border px-2 py-0.5 text-[11px] hover:bg-amber-50"
-                >
-                  Chờ duyệt
-                </button>
+              {/* ============================================
+                  LEADER VIEW - OWN TASK (NEW FLOW)
+                  ============================================ */}
+              {viewMode === "lead" && isLeaderOwnTask && (
+                <>
+                  {t.status === "todo" && (
+                    <button
+                      onClick={() => onChangeStatus?.(t.id, "in_progress")}
+                      className="rounded-md border px-2 py-0.5 text-[11px] hover:bg-emerald-50"
+                    >
+                      Bắt đầu
+                    </button>
+                  )}
+
+                  {t.status === "in_progress" && (
+                    <button
+                      onClick={() => onChangeStatus?.(t.id, "done")}
+                      className="
+                      rounded-md px-2 py-0.5 text-[11px]
+                      bg-emerald-600 text-white
+                      hover:bg-emerald-700
+                      shadow-sm
+                    "
+                    >
+                      Hoàn tất
+                    </button>
+                  )}
+
+                  {/* Không có "Chờ duyệt" cho leader own tasks */}
+                </>
               )}
 
-              {viewMode === "lead" &&
-                ["todo", "in_progress", "awaiting_review"].includes(t.status) && (
-                  <button
-                    onClick={() => onChangeStatus?.(t.id, "done")}
-                    className="rounded-md border px-2 py-0.5 text-[11px] hover:bg-emerald-50"
-                  >
-                    Hoàn tất
-                  </button>
-                )}
+              {/* ============================================
+                  LEADER VIEW - TEAM TASK (unchanged)
+                  ============================================ */}
+              {viewMode === "lead" && !isLeaderOwnTask && (
+                <>
+                  {["todo", "in_progress", "awaiting_review"].includes(t.status) && (
+                    <button
+                      onClick={() => onChangeStatus?.(t.id, "done")}
+                      className="rounded-md border px-2 py-0.5 text-[11px] hover:bg-emerald-50"
+                    >
+                      Hoàn tất
+                    </button>
+                  )}
+                </>
+              )}
             </div>
-
           </div>
         </div>
       </div>
@@ -592,7 +654,7 @@ export const RightPanel: React.FC<{
 
   // Members (for "Thành viên" accordion)
   members?: MinimalMember[];
-  onAddMember?: () => void;
+  onAddMember?: () => void;  
 
   // Tasks
   tasks?: Task[];
@@ -652,6 +714,17 @@ export const RightPanel: React.FC<{
       d.getDate() === t.getDate()
     );
   };
+
+  // Leader mode toggle state
+  const [leaderMode, setLeaderMode] = React.useState<"team" | "mine">("team");
+
+  // Collapse states for leader own tasks
+  const [showLeaderOwnTodo, setShowLeaderOwnTodo] = React.useState(true);
+  const [showLeaderOwnInProgress, setShowLeaderOwnInProgress] = React.useState(true);
+  const [showLeaderOwnDone, setShowLeaderOwnDone] = React.useState(true);
+
+  // Modal for completed tasks history
+  const [showLeaderOwnCompletedAll, setShowLeaderOwnCompletedAll] = React.useState(false);
 
   // Toggle cho từng nhóm task ở chế độ lead
   const [showLeadAwaiting, setShowLeadAwaiting] = React.useState(true);
@@ -740,6 +813,40 @@ export const RightPanel: React.FC<{
     return tasksByWorkRaw;
   }, [tasksByWorkRaw, viewMode, currentUserId]);
 
+  // Filter leader's own tasks
+  const leaderOwnTasks = React.useMemo(() => {
+    if (viewMode !== "lead" || !currentUserId) return [];
+
+    return tasksToday.filter(t => t.assigneeId === currentUserId);
+  }, [tasksToday, viewMode, currentUserId]);
+
+  // Group leader own tasks by status
+  const leaderOwnBuckets = React.useMemo(() => ({
+    todo: leaderOwnTasks.filter(t => t.status === "todo"),
+    inProgress: leaderOwnTasks.filter(t => t.status === "in_progress"),
+    // Done TODAY only (for inline display)
+    doneToday: leaderOwnTasks.filter(t =>
+      t.status === "done" && isToday(t.updatedAt || t.createdAt)
+    ),
+  }), [leaderOwnTasks]);
+
+  // All completed tasks (any date) for modal
+  const leaderOwnAllCompleted = React.useMemo(() => {
+    if (viewMode !== "lead" || !currentUserId) return [];
+
+    return tasksByWorkRaw
+      .filter(t =>
+        t.assigneeId === currentUserId &&
+        t.status === "done" &&
+        (!selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
+      )
+      .sort((a, b) => {
+        const da = new Date(a.updatedAt || a.createdAt || "");
+        const db = new Date(b.updatedAt || b.createdAt || "");
+        return db.getTime() - da.getTime(); // Newest first
+      });
+  }, [tasksByWorkRaw, viewMode, currentUserId, selectedWorkTypeId]);
+
   const myTasks = tasksToday;
   // const myTasks = React.useMemo(
   //   () => (currentUserId ? tasksByWork.filter((t) => t.assigneeId === currentUserId) : tasksByWork),
@@ -796,7 +903,7 @@ export const RightPanel: React.FC<{
       {/* Header: chỉ còn Tabs, bỏ dropdown CSKH/THU MUA */}
       <div className="flex items-center gap-3 border border-gray-300
         border-b-[2px] border-b-[#38AE3C] rounded-tl-2xl rounded-tr-2xl bg-white p-3 sticky top-0 z-10">
-       
+
         <SegmentedTabs
           tabs={[
             { key: "info", label: "Thông Tin" },
@@ -875,8 +982,8 @@ export const RightPanel: React.FC<{
           </div>
         ) : (
           /* TASKS TAB */
-          <div className="space-y-4 min-h-0">            
-            {viewMode === "lead" && (                
+          <div className="space-y-4 min-h-0">
+            {viewMode === "lead" && (
               <>
                 {isTasksTab && (
                   <HintBubble
@@ -887,7 +994,7 @@ export const RightPanel: React.FC<{
                     autoCloseMs={9000}
                   />
                 )}
-                
+
                 {/* Received Info — thông tin tiếp nhận từ tin nhắn */}
                 < ReceivedInfoSection
                   items={receivedInfos}
@@ -901,7 +1008,7 @@ export const RightPanel: React.FC<{
             {viewMode === "staff" ? (
               <>
                 {/* Primary: Chưa xử lý + Đang xử lý */}
-                <div className="premium-accordion-wrapper">                  
+                <div className="premium-accordion-wrapper">
                   <RightAccordion icon={<ClipboardList className="h-4 w-4 text-brand-600" />}
                     title="Công Việc Của Tôi">
                     <div className="grid grid-cols-1 gap-3">
@@ -942,7 +1049,7 @@ export const RightPanel: React.FC<{
                       ))}
                     </div>
                   </RightAccordion>
-                  
+
                 </div>
 
                 {/* Secondary: Chờ duyệt */}
@@ -950,443 +1057,929 @@ export const RightPanel: React.FC<{
                   <RightAccordion icon={<SquarePen className="h-4 w-4 text-gray-400" />}
                     title="Chờ Duyệt">
                     <div className="grid grid-cols-1 gap-3">
-                    {staffBuckets.awaiting.length === 0 && (
-                      <div className="rounded border p-3 text-xs text-gray-500">Không có việc chờ duyệt.</div>
-                    )}
-                    {staffBuckets.awaiting.map((t) => (
-                      <TaskCard
-                        key={t.id}
-                        t={t}
-                        members={members}
-                        viewMode="staff"
-                        onChangeStatus={onChangeTaskStatus}
-                        onReassign={onReassignTask}
-                        onToggleChecklist={onToggleChecklist}
-                        taskLogs={taskLogs}
-                        onOpenTaskLog={onOpenTaskLog}                       
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-2 text-right">
-                    <button
-                      className="text-xs text-brand-700 hover:underline"
-                      onClick={() => setShowCompleted(true)}
-                    >
-                      Xem tất cả công việc đã hoàn thành
-                    </button>
-                  </div>
+                      {staffBuckets.awaiting.length === 0 && (
+                        <div className="rounded border p-3 text-xs text-gray-500">Không có việc chờ duyệt.</div>
+                      )}
+                      {staffBuckets.awaiting.map((t) => (
+                        <TaskCard
+                          key={t.id}
+                          t={t}
+                          members={members}
+                          viewMode="staff"
+                          onChangeStatus={onChangeTaskStatus}
+                          onReassign={onReassignTask}
+                          onToggleChecklist={onToggleChecklist}
+                          taskLogs={taskLogs}
+                          onOpenTaskLog={onOpenTaskLog}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-2 text-right">
+                      <button
+                        className="text-xs text-brand-700 hover:underline"
+                        onClick={() => setShowCompleted(true)}
+                      >
+                        Xem tất cả công việc đã hoàn thành
+                      </button>
+                    </div>
 
                   </RightAccordion>
-                  
-                </div>
-                {showCompleted && (
-                    <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
-                      <div className="rounded-xl bg-white p-4 shadow-lg w-[480px] max-h-[80vh] overflow-y-auto">
 
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="text-sm font-semibold text-gray-700">
-                            Công Việc Đã Hoàn Thành
+                </div>
+                  {showCompleted && (
+                    <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+                      <div className="rounded-xl bg-white shadow-2xl w-full max-w-[560px] max-h-[80vh] overflow-hidden flex flex-col">
+                        {/* ============================================
+                            HEADER (consistent với leader modal)
+                            ============================================ */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-brand-50 to-emerald-50">
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="h-5 w-5 text-brand-600" />
+                            <h3 className="text-sm font-semibold text-gray-900">
+                              Công Việc Đã Hoàn Thành
+                            </h3>
                           </div>
                           <button
-                            className="text-xs text-gray-500 hover:text-brand-700"
                             onClick={() => setShowCompleted(false)}
+                            className="text-gray-400 hover:text-gray-600 transition"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* ============================================
+                            CONTENT (scrollable với consistent styling)
+                            ============================================ */}
+                        <div className="flex-1 overflow-y-auto px-6 py-4">
+                          {(() => {
+                            // Lọc toàn bộ task đã hoàn thành của user hiện tại, theo workType
+                            const completed = tasks
+                              .filter(
+                                (t) =>
+                                  t.status === "done" &&
+                                  t.assigneeId === currentUserId &&
+                                  (!selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
+                              )
+                              .slice()
+                              .sort((a, b) => {
+                                const da = new Date(a.updatedAt || a.createdAt || "");
+                                const db = new Date(b.updatedAt || b.createdAt || "");
+                                return db.getTime() - da.getTime(); // Newest first
+                              });
+
+                            if (completed.length === 0) {
+                              return (
+                                <div className="text-center py-12 text-sm text-gray-400">
+                                  Chưa có công việc nào hoàn thành
+                                </div>
+                              );
+                            }
+
+                            // Group theo ngày (dd/MM/yyyy format)
+                            const grouped: Record<string, typeof completed> = {};
+
+                            completed.forEach((t) => {
+                              const dateStr = t.updatedAt || t.createdAt;
+                              if (!dateStr) return;
+
+                              const date = new Date(dateStr);
+                              const key = date.toLocaleDateString("vi-VN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              });
+
+                              if (!grouped[key]) grouped[key] = [];
+                              grouped[key].push(t);
+                            });
+
+                            const today = new Date().toLocaleDateString("vi-VN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            });
+
+                            return (
+                              <div className="space-y-5">
+                                {Object.entries(grouped).map(([dateKey, tasks]) => {
+                                  const isToday = dateKey === today;
+
+                                  return (
+                                    <div key={dateKey}>
+                                      {/* ============================================
+                                          DATE HEADER (consistent với leader)
+                                          ============================================ */}
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <span className="text-xs font-semibold text-gray-600">
+                                          📅 {isToday ? `Hôm nay - ${dateKey}` : dateKey}
+                                        </span>
+                                        <span className="text-xs text-gray-400">
+                                          ({tasks.length})
+                                        </span>
+                                      </div>
+
+                                      {/* ============================================
+                                          TASK CARDS (enhanced styling)
+                                          ============================================ */}
+                                      <div className="space-y-2 ml-4">
+                                        {tasks.map((t) => (
+                                          <div
+                                            key={t.id}
+                                            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm hover:shadow-md transition-shadow"
+                                          >
+                                            {/* Title */}
+                                            <div className="text-sm font-medium text-gray-800 leading-snug mb-1">
+                                              {truncateMessageTitle(t.title || t.description)}
+                                            </div>
+
+                                            {/* Meta:  Time + Checklist */}
+                                            <div className="flex items-center justify-between text-xs text-gray-500">
+                                              <span>
+                                                Hoàn tất lúc{" "}
+                                                <span className="font-medium text-gray-700">
+                                                  {t.updatedAt
+                                                    ? new Date(t.updatedAt).toLocaleTimeString("vi-VN", {
+                                                      hour: "2-digit",
+                                                      minute: "2-digit",
+                                                    })
+                                                    : "--:--"}
+                                                </span>
+                                              </span>
+
+                                              {/* Checklist progress (if any) */}
+                                              {t.checklist && t.checklist.length > 0 && (
+                                                <span className="text-emerald-600 text-[10px]">
+                                                  ✓ {t.checklist.filter(c => c.done).length}/{t.checklist.length} mục
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* WorkType + Variant chips */}
+                                            {(t.workTypeName || t.checklistVariantName) && (
+                                              <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                                                {t.workTypeName && (
+                                                  <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                                                    {t.workTypeName}
+                                                  </span>
+                                                )}
+                                                {t.checklistVariantName && (
+                                                  <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    {t.checklistVariantName}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* ============================================
+                            FOOTER (consistent với leader)
+                            ============================================ */}
+                        <div className="px-6 py-3 border-t bg-gray-50 text-center">
+                          <button
+                            onClick={() => setShowCompleted(false)}
+                            className="text-xs text-gray-500 hover:text-gray-700"
                           >
                             Đóng
                           </button>
                         </div>
-
-                        {(() => {
-                          // Lọc toàn bộ task đã hoàn thành của user hiện tại, theo workType
-                          const completed = tasks
-                            .filter(
-                              (t) =>
-                                t.status === "done" &&
-                                t.assigneeId === currentUserId &&
-                                (!selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
-                            )
-                            .slice()
-                            .sort((a, b) => {
-                              const da = new Date(a.updatedAt || a.createdAt || "");
-                              const db = new Date(b.updatedAt || b.createdAt || "");
-                              return db.getTime() - da.getTime();
-                            });
-
-                          if (completed.length === 0) {
-                            return (
-                              <div className="text-xs text-gray-500 text-center mt-2">
-                                Chưa có công việc nào hoàn thành.
-                              </div>
-                            );
-                          }
-
-                          // Group theo ngày (yyyy-mm-dd)
-                          const groups: Record<string, typeof completed> = {};
-                          completed.forEach((t) => {
-                            const d = new Date(t.updatedAt || t.createdAt || "");
-                            const key = d.toISOString().slice(0, 10);
-                            if (!groups[key]) groups[key] = [];
-                            groups[key].push(t);
-                          });
-
-                          const sortedKeys = Object.keys(groups).sort((a, b) =>
-                            b.localeCompare(a)
-                          );
-
-                          return (
-                            <div className="space-y-4">
-                              {sortedKeys.map((dayKey) => {
-                                const dayTasks = groups[dayKey];
-                                const dateLabel = new Date(dayKey).toLocaleDateString();
-
-                                return (
-                                  <div key={dayKey}>
-                                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                                      {dateLabel}
-                                    </div>
-                                    <div className="space-y-2">
-                                      {dayTasks.map((t) => (
-                                        <div
-                                          key={t.id}
-                                          className="rounded-lg border p-2"
-                                        >
-                                          <div className="text-sm font-medium">
-                                            {t.title}
-                                          </div>
-                                          {t.description && (
-                                            <div className="text-xs text-gray-500">
-                                              {t.description}
-                                            </div>
-                                          )}
-                                          <div className="mt-1 text-[11px] text-gray-400">
-                                            Hoàn tất lúc{" "}
-                                            {new Date(
-                                              t.updatedAt || t.createdAt || ""
-                                            ).toLocaleString()}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
                       </div>
                     </div>
                   )}
               </>
             ) : (
               <>
-                {/* Lead: lọc theo assignee */}
-                <div className="rounded-xl border bg-white p-4 shadow-sm mb-3">
-                  <div className="flex flex-col gap-1">
-                    {/* Title + Group + WorkType */}
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <Users className="h-4 w-4 text-brand-600" />
-                      <span className="text-sm font-semibold">
-                        Công Việc Của Nhóm <span className="text-brand-500"> {groupName}</span>
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        • Loại việc: <span className="font-medium text-gray-700">{workTypeName}</span>
-                      </span>
-                    </div>
-
-                    {/* Filter - Select nhân viên */}
-                    <div className="flex justify-start mt-2">
-                      <div className="flex items-center gap-2 text-xs">
-                        <span>Nhân viên:</span>
-                        <select
-                          className="rounded-lg border border-brand-200 px-2 py-1 bg-white"
-                          value={assigneeFilter}
-                          onChange={(e) => setAssigneeFilter(e.target.value)}
-                        >
-                          <option value="all">Tất cả</option>
-                          {members.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <span
-                        className="
-                          ml-auto
-                          mt-2
-                          text-[12px]
-                          text-emerald-700
-                          cursor-pointer
-                          hover:underline
-                          select-none
-                        "
-                        onClick={() => setTemplateOpen(true)}
-                      >
-                        Checklist mặc định
-                      </span>
-                          
-                    </div>
-                  </div>
-
-                  <div className="mt-2 text-[11px] text-gray-400">
-                    Đang xem{" "}
-                    <span className="font-semibold text-gray-600">
-                      {leadBuckets.todo.length + leadBuckets.inProgress.length + leadBuckets.awaiting.length}
-                    </span>{" "}
-                    công việc •{" "}
-                    <span>{leadBuckets.todo.length} chưa xử lý</span> •{" "}
-                    <span>{leadBuckets.inProgress.length} đang xử lý</span> •{" "}
-                    <span className="text-amber-600 font-semibold">{leadBuckets.awaiting.length} chờ duyệt</span>
-                  </div>
+                {/* Toggle between Team and Mine */}
+                <div className="mb-4 px-2">
+                  <ToggleGroup
+                    type="single"
+                    value={leaderMode}
+                    onValueChange={(v) => v && setLeaderMode(v as "team" | "mine")}
+                    className="grid w-full grid-cols-2 gap-2"
+                  >
+                    <ToggleGroupItem
+                      value="team"
+                      className="
+                        flex items-center justify-center gap-2
+                        data-[state=on]:bg-brand-600 data-[state=on]:text-white
+                        data-[state=off]:bg-white data-[state=off]:text-gray-700
+                        border border-brand-200
+                        rounded-lg px-3 py-2 text-sm font-medium
+                        transition-all
+                      "
+                    >
+                      <Users className="h-4 w-4" />
+                      Team
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="mine"
+                      className="
+                        flex items-center justify-center gap-2
+                        data-[state=on]:bg-brand-600 data-[state=on]:text-white
+                        data-[state=off]:bg-white data-[state=off]:text-gray-700
+                        border border-brand-200
+                        rounded-lg px-3 py-2 text-sm font-medium
+                        transition-all
+                      "
+                    >
+                      <UserIcon className="h-4 w-4" />
+                      Của tôi
+                      {leaderOwnTasks.filter(t => t.status !== "done").length > 0 && (
+                        <span className="
+                          ml-1 inline-flex min-w-[18px] h-[18px]
+                          items-center justify-center
+                          rounded-full bg-amber-500 text-white
+                          text-[10px] font-bold px-1
+                        ">
+                          {leaderOwnTasks.filter(t => t.status !== "done").length}
+                        </span>
+                      )}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
 
-                {/* Grouped tasks theo trạng thái */}
-                { leadBuckets.todo.length + leadBuckets.inProgress.length + leadBuckets.awaiting.length === 0 ? (
-                  <div className="rounded-xl border border-dashed bg-white/60 p-4 text-xs text-gray-500 text-center">
-                    Không có công việc nào trong nhóm với bộ lọc hiện tại.
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* AWAITING REVIEW */}
-                    {leadBuckets.awaiting.length > 0 && (
-                      <section>
-                        <div
-                          className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
-                           onClick={() => {
-                             setShowLeadAwaiting((prev) => {
-                               const next = !prev;
-                               if (next && !awaitingOpenedRef.current) {
-                                 awaitingOpenedRef.current = true;
-                                 setHighlightAwaiting(true);
-                                 setTimeout(() => setHighlightAwaiting(false), 700);
-                               }
-                               return next;
-                             });
-                           }}
-                        >
-                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
-                          <span>Chờ duyệt ({leadBuckets.awaiting.length}) {showLeadAwaiting ? " ▲" : " ▼"}</span>
-                        </div>
-                        {showLeadAwaiting && (
-                          <div className={`space-y-3 transition-colors duration-300 ${highlightAwaiting ? "bg-amber-50/80 rounded-lg -mx-2 px-2 py-1" : ""
-                            }`}
-                          >
-                            {leadBuckets.awaiting.map((t) => (
-                              <TaskCard
-                                key={t.id}
-                                t={t}
-                                members={members}
-                                viewMode="lead"
-                                onChangeStatus={onChangeTaskStatus}
-                                onReassign={onReassignTask}
-                                onToggleChecklist={onToggleChecklist}
-                                taskLogs={taskLogs}
-                                onOpenTaskLog={onOpenTaskLog}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </section>
-                    )}
-
-                    {/* TODO */}
-                    {leadBuckets.todo.length > 0 && (
-                      <section>
-                        <div
-                          className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
-                          onClick={() => setShowLeadTodo(v => !v)}
-                        >
-                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-400" />
-                          <span>Chưa xử lý ({leadBuckets.todo.length}) {showLeadTodo ? " ▲" : " ▼"}</span>
-                        </div>
-                        {showLeadTodo && (
-                          <div className="space-y-3">
-                            {leadBuckets.todo.map((t) => (
-                              <TaskCard
-                                key={t.id}
-                                t={t}
-                                members={members}
-                                viewMode="lead"
-                                onChangeStatus={onChangeTaskStatus}
-                                onReassign={onReassignTask}
-                                onToggleChecklist={onToggleChecklist}
-                                onUpdateTaskChecklist={onUpdateTaskChecklist}
-                                taskLogs={taskLogs}
-                                onOpenTaskLog={onOpenTaskLog}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </section>
-                    )}
-
-                    {/* IN PROGRESS */}
-                    {leadBuckets.inProgress.length > 0 && (
-                      <section>
-                        <div
-                          className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
-                          onClick={() => setShowLeadInProgress(v => !v)}
-                        >
-                          <span className="inline-flex h-2 w-2 rounded-full bg-sky-400" />
-                          <span>
-                            Đang xử lý ({leadBuckets.inProgress.length})
-                            {showLeadInProgress ? " ▲" : " ▼"}
+                {/* ============================================
+                    TEAM MODE (existing logic)
+                    ============================================ */}
+                {leaderMode === "team" && (
+                  <>
+                    {/* Lead: lọc theo assignee */}
+                    <div className="rounded-xl border bg-white p-4 shadow-sm mb-3">
+                      <div className="flex flex-col gap-1">
+                        {/* Title + Group + WorkType */}
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                          <Users className="h-4 w-4 text-brand-600" />
+                          <span className="text-sm font-semibold">
+                            Công Việc Của Nhóm <span className="text-brand-500"> {groupName}</span>
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            • Loại việc: <span className="font-medium text-gray-700">{workTypeName}</span>
                           </span>
                         </div>
 
-                        {showLeadInProgress && (
-                          <div className="space-y-3">
-                            {leadBuckets.inProgress.map((t) => (
-                              <TaskCard
-                                key={t.id}
-                                t={t}
-                                members={members}
-                                viewMode="lead"
-                                onChangeStatus={onChangeTaskStatus}
-                                onReassign={onReassignTask}
-                                onToggleChecklist={onToggleChecklist}
-                                taskLogs={taskLogs}
-                                onOpenTaskLog={onOpenTaskLog}
-                              />
-                            ))}
+                        {/* Filter - Select nhân viên */}
+                        <div className="flex justify-start mt-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span>Nhân viên:</span>
+                            <select
+                              className="rounded-lg border border-brand-200 px-2 py-1 bg-white"
+                              value={assigneeFilter}
+                              onChange={(e) => setAssigneeFilter(e.target.value)}
+                            >
+                              <option value="all">Tất cả</option>
+                              {members.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                        )}
-                      </section>
-                    )}
 
-                    {/* DONE TODAY */}
-                    {leadBuckets.done.length > 0 && (
-                      <section>
-                        <div
-                          className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
-                          onClick={() => setShowLeadDone((v) => !v)}
-                        >
-                          <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                          <span>
-                            Hoàn thành ({leadBuckets.done.length}) {showLeadDone ? " ▲" : " ▼"}
+                          <span
+                            className="ml-auto mt-2 text-[12px] text-emerald-700 cursor-pointer hover:underline select-none"
+                            onClick={() => setTemplateOpen(true)}
+                          >
+                            Checklist mặc định
                           </span>
                         </div>
+                      </div>
 
-                        {showLeadDone && (
-                          <div className="space-y-3">
-                            {leadBuckets.done.map((t) => (
-                              <TaskCard
-                                key={t.id}
-                                t={t}
-                                members={members}
-                                viewMode="lead"
-                                onChangeStatus={onChangeTaskStatus}
-                                onReassign={onReassignTask}
-                                onToggleChecklist={onToggleChecklist}
-                                taskLogs={taskLogs}
-                                onOpenTaskLog={onOpenTaskLog}
-                              />
-                            ))}
-                          </div>
+                      <div className="mt-2 text-[11px] text-gray-400">
+                        Đang xem{" "}
+                        <span className="font-semibold text-gray-600">
+                          {leadBuckets.todo.length + leadBuckets.inProgress.length + leadBuckets.awaiting.length}
+                        </span>{" "}
+                        công việc •{" "}
+                        <span>{leadBuckets.todo.length} chưa xử lý</span> •{" "}
+                        <span>{leadBuckets.inProgress.length} đang xử lý</span> •{" "}
+                        <span className="text-amber-600 font-semibold">{leadBuckets.awaiting.length} chờ duyệt</span>
+                      </div>
+                    </div>
+
+                    {/* Grouped tasks theo trạng thái */}
+                    {leadBuckets.todo.length + leadBuckets.inProgress.length + leadBuckets.awaiting.length === 0 ? (
+                      <div className="rounded-xl border border-dashed bg-white/60 p-4 text-xs text-gray-500 text-center">
+                        Không có công việc nào trong nhóm với bộ lọc hiện tại.
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* AWAITING REVIEW */}
+                        {leadBuckets.awaiting.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
+                              onClick={() => {
+                                setShowLeadAwaiting((prev) => {
+                                  const next = !prev;
+                                  if (next && !awaitingOpenedRef.current) {
+                                    awaitingOpenedRef.current = true;
+                                    setHighlightAwaiting(true);
+                                    setTimeout(() => setHighlightAwaiting(false), 700);
+                                  }
+                                  return next;
+                                });
+                              }}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
+                              <span>Chờ duyệt ({leadBuckets.awaiting.length}) {showLeadAwaiting ? " ▲" : " ▼"}</span>
+                            </div>
+                            {showLeadAwaiting && (
+                              <div className={`space-y-3 transition-colors duration-300 ${highlightAwaiting ? "bg-amber-50/80 rounded-lg -mx-2 px-2 py-1" : ""}`}>
+                                {leadBuckets.awaiting.map((t) => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={false} // ✅ Team task
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </section>
                         )}
 
-                        <div className="mt-2 text-right">
-                          <button
-                            className="text-xs text-brand-700 hover:underline"
-                            onClick={() => setShowLeadCompletedAll(true)}
-                          >
-                            Xem tất cả công việc đã hoàn thành
-                          </button>
-                        </div>
-                      </section>
-                    )}
-                    
-                  </div>
-                )}
+                        {/* TODO */}
+                        {leadBuckets.todo.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
+                              onClick={() => setShowLeadTodo(v => !v)}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-amber-400" />
+                              <span>Chưa xử lý ({leadBuckets.todo.length}) {showLeadTodo ? " ▲" : " ▼"}</span>
+                            </div>
+                            {showLeadTodo && (
+                              <div className="space-y-3">
+                                {leadBuckets.todo.map((t) => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={false} // ✅ Team task
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    onUpdateTaskChecklist={onUpdateTaskChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        )}
 
+                        {/* IN PROGRESS */}
+                        {leadBuckets.inProgress.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
+                              onClick={() => setShowLeadInProgress(v => !v)}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-sky-400" />
+                              <span>
+                                Đang xử lý ({leadBuckets.inProgress.length})
+                                {showLeadInProgress ? " ▲" : " ▼"}
+                              </span>
+                            </div>
+
+                            {showLeadInProgress && (
+                              <div className="space-y-3">
+                                {leadBuckets.inProgress.map((t) => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={false} // Team task
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        )}
+
+                        {/* DONE TODAY */}
+                        {leadBuckets.done.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-1 flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none"
+                              onClick={() => setShowLeadDone((v) => !v)}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                              <span>
+                                Hoàn thành ({leadBuckets.done.length}) {showLeadDone ? " ▲" : " ▼"}
+                              </span>
+                            </div>
+
+                            {showLeadDone && (
+                              <div className="space-y-3">
+                                {leadBuckets.done.map((t) => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={false} // ✅ Team task
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="mt-2 text-right">
+                              <button
+                                className="text-xs text-brand-700 hover:underline"
+                                onClick={() => setShowLeadCompletedAll(true)}
+                              >
+                                Xem tất cả công việc đã hoàn thành
+                              </button>
+                            </div>
+                          </section>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Modal:  All completed tasks */}
                     {showLeadCompletedAll && (
-                      <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
-                        <div className="rounded-xl bg-white p-4 shadow-lg w-[520px] max-h-[80vh] overflow-y-auto">
-                          <div className="flex justify-between items-center mb-3">
-                            <div className="text-sm font-semibold text-gray-700">
-                              Tất Cả Công Việc Đã Hoàn Thành
+                      <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+                        <div className="rounded-xl bg-white shadow-2xl w-full max-w-[560px] max-h-[80vh] overflow-hidden flex flex-col">
+                          {/* Header */}
+                          <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-brand-50 to-emerald-50">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-5 w-5 text-brand-600" />
+                              <h3 className="text-sm font-semibold text-gray-900">
+                                Công Việc Đã Hoàn Thành (Team)
+                              </h3>
                             </div>
                             <button
-                              className="text-xs text-gray-500 hover:text-brand-700"
                               onClick={() => setShowLeadCompletedAll(false)}
+                              className="text-gray-400 hover:text-gray-600 transition"
                             >
-                              Đóng
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
                             </button>
                           </div>
 
-                          {allLeadDoneTasks.length === 0 ? (
-                            <div className="text-xs text-gray-500 text-center mt-2">
-                              Chưa có công việc nào hoàn thành.
-                            </div>
-                          ) : (
-                            <div className="space-y-3 text-xs">
-                              {Object.entries(
-                                allLeadDoneTasks.reduce<Record<string, Task[]>>((acc, t) => {
-                                  const dt = t.updatedAt || t.createdAt;
-                                  if (!dt) return acc;
-                                  const d = new Date(dt);
-                                  const key = d.toLocaleDateString("vi-VN", {
+                          {/* Content */}
+                          <div className="flex-1 overflow-y-auto px-6 py-4">
+                            {allLeadDoneTasks.length === 0 ? (
+                              <div className="text-center py-12 text-sm text-gray-400">
+                                Chưa có công việc nào hoàn thành
+                              </div>
+                            ) : (
+                              <div className="space-y-5">
+                                {(() => {
+                                  // Group by date
+                                  const grouped: Record<string, typeof allLeadDoneTasks> = {};
+
+                                  allLeadDoneTasks.forEach(t => {
+                                    const dateStr = t.updatedAt || t.createdAt;
+                                    if (!dateStr) return;
+
+                                    const date = new Date(dateStr);
+                                    const key = date.toLocaleDateString("vi-VN", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    });
+
+                                    if (!grouped[key]) grouped[key] = [];
+                                    grouped[key].push(t);
+                                  });
+
+                                  const today = new Date().toLocaleDateString("vi-VN", {
                                     day: "2-digit",
                                     month: "2-digit",
                                     year: "numeric",
                                   });
-                                  if (!acc[key]) acc[key] = [];
-                                  acc[key].push(t);
-                                  return acc;
-                                }, {})
-                              )
-                                // sort ngày mới -> cũ
-                                .sort(([a], [b]) => {
-                                  const [da, ma, ya] = a.split("/").map(Number);
-                                  const [db, mb, yb] = b.split("/").map(Number);
-                                  const ta = new Date(ya, ma - 1, da).getTime();
-                                  const tb = new Date(yb, mb - 1, db).getTime();
-                                  return tb - ta;
-                                })
-                                .map(([date, list]) => (
-                                  <div key={date}>
-                                    <div className="mb-1 font-semibold text-gray-600">{date}</div>
-                                    <div className="space-y-2">
-                                      {list.map((t) => (
-                                        <div
-                                          key={t.id}
-                                          className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm"
-                                        >
-                                          <div className="text-[12px] font-medium text-gray-800">
-                                            {truncateMessageTitle(t.title || t.description)}
-                                          </div>
-                                          {t.description && (
-                                            <div className="mt-0.5 text-[11px] text-gray-500 line-clamp-2">
-                                              {t.description}
-                                            </div>
-                                          )}
-                                          <div className="mt-1 flex items-center justify-between text-[10px] text-gray-400">
-                                            <span>
-                                              Hoàn tất lúc{" "}
-                                              {t.updatedAt
-                                                ? new Date(t.updatedAt).toLocaleTimeString("vi-VN", {
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                })
-                                                : "--:--"}
-                                            </span>
-                                            {t.assigneeId && (
-                                              <span>
-                                                Giao cho{" "}
-                                                <span className="font-medium text-gray-600">
-                                                  {members.find((m) => m.id === t.assigneeId)?.name ??
-                                                    t.assigneeId}
-                                                </span>
-                                              </span>
-                                            )}
-                                          </div>
+
+                                  return Object.entries(grouped).map(([dateKey, tasks]) => {
+                                    const isToday = dateKey === today;
+
+                                    return (
+                                      <div key={dateKey}>
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <span className="text-xs font-semibold text-gray-600">
+                                            📅 {isToday ? `Hôm nay - ${dateKey}` : dateKey}
+                                          </span>
+                                          <span className="text-xs text-gray-400">({tasks.length})</span>
                                         </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
+
+                                        <div className="space-y-2 ml-4">
+                                          {tasks.map(t => (
+                                            <div
+                                              key={t.id}
+                                              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm hover:shadow-md transition-shadow"
+                                            >
+                                              <div className="text-sm font-medium text-gray-800 leading-snug mb-1">
+                                                {truncateMessageTitle(t.title || t.description)}
+                                              </div>
+
+                                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                                <span>
+                                                  Hoàn tất lúc{" "}
+                                                  <span className="font-medium text-gray-700">
+                                                    {t.updatedAt
+                                                      ? new Date(t.updatedAt).toLocaleTimeString("vi-VN", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                      })
+                                                      : "--:--"}
+                                                  </span>
+                                                </span>
+
+                                                {/* Assignee name */}
+                                                <span>
+                                                  <span className="font-medium text-gray-700">
+                                                    {members.find(m => m.id === t.assigneeId)?.name ?? t.assigneeId}
+                                                  </span>
+                                                </span>
+                                              </div>
+
+                                              {t.checklist && t.checklist.length > 0 && (
+                                                <div className="mt-1 text-[10px] text-emerald-600">
+                                                  ✓ {t.checklist.filter(c => c.done).length}/{t.checklist.length} mục
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  });
+                                })()}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer */}
+                          <div className="px-6 py-3 border-t bg-gray-50 text-center">
+                            <button
+                              onClick={() => setShowLeadCompletedAll(false)}
+                              className="text-xs text-gray-500 hover:text-gray-700"
+                            >
+                              Đóng
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* ============================================
+                    MINE MODE (NEW)
+                    ============================================ */}
+                    {leaderMode === "mine" && (
+                      <div className="space-y-4">
+                        {/* Summary card */}
+                        <div className="rounded-xl border bg-gradient-to-r from-brand-50 via-emerald-50 to-cyan-50 p-4 shadow-sm">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <UserIcon className="h-5 w-5 text-brand-600" />
+                            <span className="text-sm font-semibold text-gray-900">
+                              Công Việc Của Tôi
+                            </span>
+                          </div>
+
+                          <div className="text-center text-xs text-gray-600">
+                            {leaderOwnTasks.filter(t => t.status !== "done").length > 0 ? (
+                              <>
+                                <span className="font-semibold text-brand-700">
+                                  {leaderOwnTasks.filter(t => t.status !== "done").length}
+                                </span>{" "}
+                                công việc đang thực hiện •{" "}
+                                <span>{leaderOwnBuckets.todo.length} chưa xử lý</span> •{" "}
+                                <span>{leaderOwnBuckets.inProgress.length} đang xử lý</span>
+                                {leaderOwnBuckets.doneToday.length > 0 && (
+                                  <>
+                                    {" "}• <span className="text-emerald-600">{leaderOwnBuckets.doneToday.length} hoàn thành hôm nay</span>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-emerald-600">✓ Đã hoàn thành hết công việc hôm nay</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Empty state */}
+                        {leaderOwnTasks.filter(t => t.status !== "done").length === 0 &&
+                          leaderOwnBuckets.doneToday.length === 0 && (
+                            <div className="rounded-xl border border-dashed bg-white/60 p-8 text-center">
+                              <UserIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                              <p className="text-sm text-gray-500 font-medium mb-1">
+                                Bạn chưa có công việc nào cần làm
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Các công việc được giao sẽ xuất hiện ở đây
+                              </p>
                             </div>
                           )}
+
+                        {/* ============================================
+                            TODO SECTION (Collapsible)
+                            ============================================ */}
+                        {leaderOwnBuckets.todo.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-2 flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none hover:text-brand-700 transition-colors"
+                              onClick={() => setShowLeaderOwnTodo(v => !v)}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-amber-400" />
+                              <span>Chưa xử lý ({leaderOwnBuckets.todo.length})</span>
+                              <span className="ml-1 text-gray-400">
+                                {showLeaderOwnTodo ? "▲" : "▼"}
+                              </span>
+                            </div>
+
+                            {showLeaderOwnTodo && (
+                              <div className={`
+                                    space-y-3
+                                    transition-all duration-300 ease-out
+                                    overflow-hidden
+                                    ${showLeaderOwnTodo ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}
+                                  `}>
+                                {leaderOwnBuckets.todo.map(t => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={true}
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    onUpdateTaskChecklist={onUpdateTaskChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        )}
+
+                        {/* ============================================
+                            IN_PROGRESS SECTION (Collapsible)
+                            ============================================ */}
+                        {leaderOwnBuckets.inProgress.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-2 flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none hover:text-brand-700 transition-colors"
+                              onClick={() => setShowLeaderOwnInProgress(v => !v)}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-sky-400" />
+                              <span>Đang xử lý ({leaderOwnBuckets.inProgress.length})</span>
+                              <span className="ml-1 text-gray-400">
+                                {showLeaderOwnInProgress ? "▲" : "▼"}
+                              </span>
+                            </div>
+
+                            {showLeaderOwnInProgress && (
+                              <div className="space-y-3">
+                                {leaderOwnBuckets.inProgress.map(t => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={true}
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    onUpdateTaskChecklist={onUpdateTaskChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        )}
+
+                        {/* ============================================
+                            DONE TODAY SECTION (Collapsible)
+                            ============================================ */}
+                        {leaderOwnBuckets.doneToday.length > 0 && (
+                          <section>
+                            <div
+                              className="mb-2 flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none hover:text-brand-700 transition-colors"
+                              onClick={() => setShowLeaderOwnDone(v => !v)}
+                            >
+                              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                              <span>Hoàn thành hôm nay ({leaderOwnBuckets.doneToday.length})</span>
+                              <span className="ml-1 text-gray-400">
+                                {showLeaderOwnDone ? "▲" : "▼"}
+                              </span>
+                            </div>
+
+                            {showLeaderOwnDone && (
+                              <div className="space-y-3">
+                                {leaderOwnBuckets.doneToday.map(t => (
+                                  <TaskCard
+                                    key={t.id}
+                                    t={t}
+                                    members={members}
+                                    viewMode="lead"
+                                    isLeaderOwnTask={true}
+                                    onChangeStatus={onChangeTaskStatus}
+                                    onReassign={onReassignTask}
+                                    onToggleChecklist={onToggleChecklist}
+                                    onUpdateTaskChecklist={onUpdateTaskChecklist}
+                                    taskLogs={taskLogs}
+                                    onOpenTaskLog={onOpenTaskLog}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        )}
+
+                        {/* ============================================
+                            LINK TO ALL COMPLETED TASKS
+                            ============================================ */}
+                        {leaderOwnAllCompleted.length > 0 && (
+                          <div className="text-center pt-2">
+                            <button
+                              className="text-xs text-brand-700 hover:text-brand-800 hover:underline font-medium"
+                              onClick={() => setShowLeaderOwnCompletedAll(true)}
+                            >
+                              Xem tất cả công việc đã hoàn thành ({leaderOwnAllCompleted.length}) →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ============================================
+                        MODAL:  All Completed Tasks (Leader Own)
+                        ============================================ */}
+                    {showLeaderOwnCompletedAll && (
+                      <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+                        <div className="rounded-xl bg-white shadow-2xl w-full max-w-[560px] max-h-[80vh] overflow-hidden flex flex-col">
+                          {/* Header */}
+                          <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-brand-50 to-emerald-50">
+                            <div className="flex items-center gap-2">
+                              <UserIcon className="h-5 w-5 text-brand-600" />
+                              <h3 className="text-sm font-semibold text-gray-900">
+                                Công Việc Đã Hoàn Thành
+                              </h3>
+                            </div>
+                            <button
+                              onClick={() => setShowLeaderOwnCompletedAll(false)}
+                              className="text-gray-400 hover:text-gray-600 transition"
+                            >
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 overflow-y-auto px-6 py-4">
+                            {leaderOwnAllCompleted.length === 0 ? (
+                              <div className="text-center py-12 text-sm text-gray-400">
+                                Chưa có công việc nào hoàn thành
+                              </div>
+                            ) : (
+                              <div className="space-y-5">
+                                {(() => {
+                                  // Group by date
+                                  const grouped: Record<string, typeof leaderOwnAllCompleted> = {};
+
+                                  leaderOwnAllCompleted.forEach(t => {
+                                    const dateStr = t.updatedAt || t.createdAt;
+                                    if (!dateStr) return;
+
+                                    const date = new Date(dateStr);
+                                    const key = date.toLocaleDateString("vi-VN", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    });
+
+                                    if (!grouped[key]) grouped[key] = [];
+                                    grouped[key].push(t);
+                                  });
+
+                                  const today = new Date().toLocaleDateString("vi-VN", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  });
+
+                                  return Object.entries(grouped).map(([dateKey, tasks]) => {
+                                    const isToday = dateKey === today;
+
+                                    return (
+                                      <div key={dateKey}>
+                                        {/* Date header */}
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <span className="text-xs font-semibold text-gray-600">
+                                            📅 {isToday ? `Hôm nay - ${dateKey}` : dateKey}
+                                          </span>
+                                          <span className="text-xs text-gray-400">
+                                            ({tasks.length})
+                                          </span>
+                                        </div>
+
+                                        {/* Tasks */}
+                                        <div className="space-y-2 ml-4">
+                                          {tasks.map(t => (
+                                            <div
+                                              key={t.id}
+                                              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm hover:shadow-md transition-shadow"
+                                            >
+                                              {/* Title */}
+                                              <div className="text-sm font-medium text-gray-800 leading-snug mb-1">
+                                                {truncateMessageTitle(t.title || t.description)}
+                                              </div>
+
+                                              {/* Meta */}
+                                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                                <span>
+                                                  Hoàn tất lúc{" "}
+                                                  <span className="font-medium text-gray-700">
+                                                    {t.updatedAt
+                                                      ? new Date(t.updatedAt).toLocaleTimeString("vi-VN", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                      })
+                                                      : "--:--"}
+                                                  </span>
+                                                </span>
+
+                                                {/* Checklist progress (if any) */}
+                                                {t.checklist && t.checklist.length > 0 && (
+                                                  <span className="text-emerald-600 text-[10px]">
+                                                    ✓ {t.checklist.filter(c => c.done).length}/{t.checklist.length} mục
+                                                  </span>
+                                                )}
+                                              </div>
+
+                                              {/* WorkType + Variant */}
+                                              {(t.workTypeName || t.checklistVariantName) && (
+                                                <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                                                  {t.workTypeName && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                                                      {t.workTypeName}
+                                                    </span>
+                                                  )}
+                                                  {t.checklistVariantName && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                      {t.checklistVariantName}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  });
+                                })()}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer */}
+                          <div className="px-6 py-3 border-t bg-gray-50 text-center">
+                            <button
+                              onClick={() => setShowLeaderOwnCompletedAll(false)}
+                              className="text-xs text-gray-500 hover:text-gray-700"
+                            >
+                              Đóng
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1415,7 +2008,49 @@ export const RightPanel: React.FC<{
             }));
           }}
         />
-      </div>      
+      </div>
+      <style>{`
+  /* Smooth collapse animation */
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      max-height: 2000px;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 1;
+      max-height: 2000px;
+    }
+    to {
+      opacity: 0;
+      max-height: 0;
+    }
+  }
+
+  /* Apply to task sections */
+  section > div. space-y-3 {
+    animation: slideDown 0.3s ease-out;
+  }
+    
+  .task-section-enter {
+    max-height: 0;
+    overflow: hidden;
+    transition:  max-height 0.3s ease-out;
+  }
+  . task-section-enter-active {
+    max-height:  2000px;
+  }
+`}</style>
     </aside>
+
+    
   );
 };

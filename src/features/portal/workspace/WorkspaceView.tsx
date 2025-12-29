@@ -457,6 +457,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
 
                     // mobile assign data
                     mobileMembers={groupMembers}
+                    groupMembers={groupMembers}
                     mobileChecklistVariants={checklistVariants}
                     defaultChecklistVariantId={defaultChecklistVariantId}
                     onCreateTaskFromMessage={onCreateTaskFromMessage}
