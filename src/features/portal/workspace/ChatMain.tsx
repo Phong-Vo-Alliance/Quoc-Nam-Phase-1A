@@ -17,7 +17,7 @@ import {
   ImageUp,
   MapPin,
   ClipboardList, LayoutList, NotebookPen,
-  ListChecks,  
+  ListChecks, UserIcon,
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
@@ -41,6 +41,7 @@ import type { Phase1AFileItem } from '../components/FileManagerPhase1A';
 import { TabTaskMobile } from '../components/TabTaskMobile';
 import { DefaultChecklistMobile } from '../components/DefaultChecklistMobile';
 import { TaskBannerMobile } from '../components/TaskBannerMobile';
+import { TabOwnTasksMobile } from '../components/TabOwnTasksMobile';
 
 type ViewMode = 'lead' | 'staff';
 
@@ -173,6 +174,7 @@ export const ChatMain: React.FC<{
 
   // NEW: data + callback for mobile assign
   mobileMembers?: Array<{ id: string; name: string }>;
+  groupMembers?: Array<{ id:  string; name: string; role?:  "Leader" | "Member" }>;
   mobileChecklistVariants?: { id: string; name: string; isDefault?: boolean }[];
   defaultChecklistVariantId?: string;
   onCreateTaskFromMessage?: (payload: {
@@ -184,14 +186,14 @@ export const ChatMain: React.FC<{
   }) => void;
 
   // Task management callbacks
-onChangeTaskStatus?: (id: string, next: Task["status"]) => void;
-onReassignTask?: (id: string, assigneeId: string) => void;
-onToggleChecklist?: (taskId: string, itemId: string, done: boolean) => void;
-onUpdateTaskChecklist?: (taskId: string, next: ChecklistItem[]) => void;
+  onChangeTaskStatus?: (id: string, next: Task["status"]) => void;
+  onReassignTask?: (id: string, assigneeId: string) => void;
+  onToggleChecklist?: (taskId: string, itemId: string, done: boolean) => void;
+  onUpdateTaskChecklist?: (taskId: string, next: ChecklistItem[]) => void;  
 
-// Checklist templates
-checklistTemplates?: ChecklistTemplateMap;
-setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap>>;
+  // Checklist templates
+  checklistTemplates?: ChecklistTemplateMap;
+  setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap>>;
 }> = ({
   selectedGroup,
   currentUserId,
@@ -237,6 +239,7 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
 
   // mobile assign
   mobileMembers = [],
+  groupMembers = [],
   mobileChecklistVariants = [],
   defaultChecklistVariantId,
   onCreateTaskFromMessage,
@@ -260,9 +263,13 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
   const [mobileTaskOpen, setMobileTaskOpen] = React.useState(false);
   const [mobileChecklistOpen, setMobileChecklistOpen] = React.useState(false);
 
-  // Task banner data for staff
-  const staffPendingTasks = React.useMemo(() => {
-    if (viewMode !== 'staff' || !currentUserId || !isMobile) return [];
+  // Mobile own tasks screen state
+  const [mobileOwnTasksOpen, setMobileOwnTasksOpen] = React.useState(false);
+
+  // ✅ UPDATED: Task banner data for BOTH staff AND leader
+  const myPendingTasks = React.useMemo(() => {
+    // Show for both staff and leader on mobile
+    if (!currentUserId || !isMobile) return [];
 
     return tasks
       .filter(t =>
@@ -273,10 +280,10 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
         // Sort by createdAt DESC (latest first)
         new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
       );
-  }, [tasks, currentUserId, viewMode, isMobile]);
+  }, [tasks, currentUserId, isMobile]); // ✅ Removed viewMode dependency
 
   // Latest task for banner display
-  const latestTask = staffPendingTasks[0];
+  const latestTask = myPendingTasks[0];
 
   const latestTaskWorkType = React.useMemo(() => {
     if (!latestTask) return '';
@@ -298,7 +305,7 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
   const taskBreakdownByWorkType = React.useMemo(() => {
     const grouped = new Map<string, { todo: number; inProgress: number }>();
 
-    staffPendingTasks.forEach(task => {
+    myPendingTasks.forEach(task => {
       const existing = grouped.get(task.workTypeId) || { todo: 0, inProgress: 0 };
 
       if (task.status === 'todo') existing.todo++;
@@ -316,7 +323,7 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
         inProgressCount: counts.inProgress,
       };
     });
-  }, [staffPendingTasks, workTypes]);
+  }, [myPendingTasks, workTypes]); // ✅ Updated dependency
 
   const composerRef = React.useRef<HTMLDivElement | null>(null);
   const [sheetBottom, setSheetBottom] = React.useState<number>(130);
@@ -446,6 +453,30 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
     setTimeout(() => setInlineToast(null), 2200);
   };
 
+  // Calculate leader's active task count for badge
+  const leaderOwnActiveCount = React.useMemo(() => {
+    if (viewMode !== 'lead' || !currentUserId) return 0;
+
+    // Helper to check if date is today
+    const isToday = (iso?: string) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      const t = new Date();
+      return (
+        d.getFullYear() === t.getFullYear() &&
+        d.getMonth() === t.getMonth() &&
+        d.getDate() === t.getDate()
+      );
+    };
+
+    return tasks.filter(t =>
+      t.assigneeId === currentUserId &&
+      isToday(t.createdAt) &&
+      (t.status === 'todo' || t.status === 'in_progress') &&
+      (!selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
+    ).length;
+  }, [tasks, viewMode, currentUserId, selectedWorkTypeId]);
+
   return (
     <>
     <main className={mainContainerCls}>
@@ -506,8 +537,38 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
                         <div className="flex h-8 w-8 items-center justify-center rounded-full">
                           <LayoutList className="h-4 w-4 text-brand-600" />
                         </div>
-                        <span className="text-sm font-normal">Công việc</span>
+                        <span className="text-sm font-normal">
+                          Công việc {viewMode === 'lead' ? '(Phòng ban)' : ''}
+                        </span>
                       </button>
+
+                      {/* Leader own tasks menu item */}
+                      {viewMode === 'lead' && (
+                        <button
+                          className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
+                          onClick={() => {
+                            setOpenMobileMenu(false);
+                            setMobileOwnTasksOpen(true);
+                          }}
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                            <UserIcon className="h-4 w-4 text-brand-600" />
+                          </div>
+                          <span className="text-sm font-normal">Công việc của tôi</span>
+
+                          {/* Badge:  active task count */}
+                          {leaderOwnActiveCount > 0 && (
+                            <span className="
+                              inline-flex items-center justify-center
+                              min-w-[20px] h-[20px]
+                              rounded-full bg-amber-500 text-white
+                              text-[10px] font-bold px-1. 5
+                            ">
+                              {leaderOwnActiveCount}
+                            </span>
+                          )}
+                        </button>
+                      )}
 
                       {viewMode === 'lead' && (
                         <button
@@ -578,20 +639,24 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
         )}
       </div>
 
-      {/* NEW: Task Banner for Mobile Staff */}
-      {isMobileLayout && viewMode === 'staff' && (
+      {/* ✅ UPDATED: Task Banner for Mobile (Both Staff & Leader) */}
+      {isMobileLayout && (
         <TaskBannerMobile
-          visible={staffPendingTasks.length > 0}
+          visible={myPendingTasks.length > 0}
           workType={latestTaskWorkType}
           taskTitle={latestTaskTitle}
-          totalCount={staffPendingTasks.length}
+          totalCount={myPendingTasks.length}
           breakdown={taskBreakdownByWorkType}
           onViewWorkType={(workTypeId) => {
             // Switch to the specific WorkType tab
-            onChangeWorkType ?.(workTypeId);
+            onChangeWorkType?.(workTypeId);
 
-            // Open task panel
-            setMobileTaskOpen(true);
+            // Open appropriate task panel based on role
+            if (viewMode === 'lead') {
+              setMobileOwnTasksOpen(true); // ✅ Leader sees their own tasks
+            } else {
+              setMobileTaskOpen(true); // Staff sees team tasks
+            }
           }}
         />
       )}
@@ -784,6 +849,31 @@ setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap
         }}
       />
     )}
+
+    
+      {/* Mobile Own Tasks Screen */}
+      {isMobileLayout && mobileOwnTasksOpen && (
+        <TabOwnTasksMobile
+          open={mobileOwnTasksOpen}
+          onBack={() => setMobileOwnTasksOpen(false)}
+          currentUserId={currentUserId}
+          tasks={tasks}
+          selectedWorkTypeId={selectedWorkTypeId}
+          members={groupMembers || mobileMembers || []} // ✅ FALLBACK
+          onChangeTaskStatus={onChangeTaskStatus || (() => {})} // ✅ FALLBACK
+          onToggleChecklist={onToggleChecklist || (() => {})} // ✅ FALLBACK
+          onUpdateTaskChecklist={onUpdateTaskChecklist || (() => {})} // ✅ FALLBACK
+          onOpenTaskLog={(taskId) => {
+            setMobileOwnTasksOpen(false);
+            setMobileTaskLogId(taskId);
+            setMobileTaskLogOpen(true);
+          }}
+          taskLogs={taskLogs}
+          workTypes={workTypes}
+          checklistTemplates={checklistTemplates}
+          setChecklistTemplates={setChecklistTemplates}
+        />
+      )}
 
       {/* Mobile Info Screen */}
       {isMobileLayout && mobileInfoOpen && (
