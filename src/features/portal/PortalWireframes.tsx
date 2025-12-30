@@ -908,6 +908,9 @@ const handleOpenSourceMessage = React.useCallback(
         )
       );
     }
+
+    // 🆕 Close mobile received info screen if open
+    setAssignSheet({ open: false });
     
     pushToast("Đã giao công việc.", 'success');
   };
@@ -1222,7 +1225,7 @@ const handleOpenSourceMessage = React.useCallback(
             
             onReassignTask={undefined}  // hoặc implement nếu cần
             
-            onOpenWorkTypeManager={() => setShowWorkTypeManager(true)}            
+            onOpenWorkTypeManager={() => setShowWorkTypeManager(true)}
           />          
         ) : (
           <TeamMonitorView

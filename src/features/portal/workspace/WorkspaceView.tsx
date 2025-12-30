@@ -704,6 +704,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
 
           checklistTemplates={checklistTemplates}
           setChecklistTemplates={setChecklistTemplates}
+
+          onAssignInfo={onAssignInfo}          
+          onOpenGroupTransfer={openTransferSheet}
         />
       </div>
 

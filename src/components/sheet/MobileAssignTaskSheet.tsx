@@ -99,9 +99,9 @@ export const MobileAssignTaskSheet: React.FC<Props> = ({
       <SheetContent
         side="bottom"
         className="
-          rounded-t-2xl shadow-2xl
+          rounded-t-2xl z-[200] shadow-2xl
           px-4 pt-3 pb-[calc(16px+env(safe-area-inset-bottom))]
-          max-h-[88vh] overflow-y-auto
+          max-h-[88vh] flex flex-col
           /* Centered narrow sheet to fit the mobile frame even on desktop preview */
           w-[92vw] max-w-[430px] left-1/2 -translate-x-1/2 right-auto top-auto
         "
@@ -154,7 +154,7 @@ export const MobileAssignTaskSheet: React.FC<Props> = ({
               <SelectTrigger className="mt-1 w-full rounded-lg border bg-white">
                 <SelectValue placeholder="Chọn nhân viên…" />
               </SelectTrigger>
-              <SelectContent className="max-h-[260px]">
+              <SelectContent className="max-h-[260px] z-[250]" position="popper" sideOffset={4}>
                 {members.length === 0 ? (
                   <div className="px-3 py-2 text-xs text-gray-500">Chưa có thành viên trong nhóm.</div>
                 ) : (

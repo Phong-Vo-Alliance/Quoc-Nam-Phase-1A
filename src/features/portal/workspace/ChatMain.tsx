@@ -17,7 +17,7 @@ import {
   ImageUp,
   MapPin,
   ClipboardList, LayoutList, NotebookPen,
-  ListChecks, UserIcon,
+  ListChecks, UserIcon, Inbox,
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import { Avatar, Badge } from '../components';
@@ -42,6 +42,7 @@ import { TabTaskMobile } from '../components/TabTaskMobile';
 import { DefaultChecklistMobile } from '../components/DefaultChecklistMobile';
 import { TaskBannerMobile } from '../components/TaskBannerMobile';
 import { TabOwnTasksMobile } from '../components/TabOwnTasksMobile';
+import { TabReceivedInfoMobile } from '../components/TabReceivedInfoMobile';
 
 type ViewMode = 'lead' | 'staff';
 
@@ -194,6 +195,12 @@ export const ChatMain: React.FC<{
   // Checklist templates
   checklistTemplates?: ChecklistTemplateMap;
   setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap>>;
+
+  onAssignInfo?: (info: ReceivedInfo) => void;
+  onOpenGroupTransfer?: (info: ReceivedInfo) => void;
+
+  setReceivedInfos?:  React.Dispatch<React.SetStateAction<ReceivedInfo[]>>;
+  allGroups?: GroupChat[];
 }> = ({
   selectedGroup,
   currentUserId,
@@ -251,6 +258,12 @@ export const ChatMain: React.FC<{
   onUpdateTaskChecklist,
   checklistTemplates,
   setChecklistTemplates,
+
+  onAssignInfo,
+  onOpenGroupTransfer,
+
+  setReceivedInfos,
+  allGroups = [],
 }) => {
   const [inputValue, setInputValue] = React.useState('');
   const [inlineToast, setInlineToast] = React.useState<string | null>(null);
@@ -262,9 +275,16 @@ export const ChatMain: React.FC<{
   const [mobileInfoOpen, setMobileInfoOpen] = React.useState(false);
   const [mobileTaskOpen, setMobileTaskOpen] = React.useState(false);
   const [mobileChecklistOpen, setMobileChecklistOpen] = React.useState(false);
+  const [mobileReceivedInfoOpen, setMobileReceivedInfoOpen] = React.useState(false);
 
   // Mobile own tasks screen state
   const [mobileOwnTasksOpen, setMobileOwnTasksOpen] = React.useState(false);
+
+  // Calculate waiting info count for badge
+  const waitingInfoCount = React.useMemo(() => {
+    if (viewMode !== 'lead' || !isMobile) return 0;
+    return receivedInfos?.filter(info => info.status === 'waiting').length ?? 0;
+  }, [receivedInfos, viewMode, isMobile]);
 
   // ✅ UPDATED: Task banner data for BOTH staff AND leader
   const myPendingTasks = React.useMemo(() => {
@@ -477,6 +497,31 @@ export const ChatMain: React.FC<{
     ).length;
   }, [tasks, viewMode, currentUserId, selectedWorkTypeId]);
 
+  // Handle confirm group transfer
+  const handleConfirmGroupTransfer = React.useCallback((payload: {
+    infoId: string;
+    toGroupId: string;
+    workTypeId: string;
+    assigneeId: string;
+    toGroupName: string;
+    toWorkTypeName: string;
+  }) => {
+    // Update receivedInfo status
+    setReceivedInfos?.(prev =>
+      prev.map(inf => inf.id === payload.infoId
+        ? {
+          ...inf,
+          status: "transferred",
+          transferredToGroupName: payload.toGroupName,
+          transferredWorkTypeName: payload.toWorkTypeName,
+        }
+        : inf
+      )
+    );
+
+    showInlineToast(`Đã chuyển sang nhóm ${payload.toGroupName}`);
+  }, [setReceivedInfos]);
+
   return (
     <>
     <main className={mainContainerCls}>
@@ -565,6 +610,34 @@ export const ChatMain: React.FC<{
                               text-[10px] font-bold px-1. 5
                             ">
                               {leaderOwnActiveCount}
+                            </span>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Tiếp nhận công việc */}
+                      {viewMode === 'lead' && (
+                        <button
+                          className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-brand-50 text-gray-700"
+                          onClick={() => {
+                            setOpenMobileMenu(false);
+                            setMobileReceivedInfoOpen(true);
+                          }}
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                            <Inbox className="h-4 w-4 text-brand-600" />
+                          </div>
+                          <span className="text-sm font-normal">Tiếp nhận công việc</span>
+
+                          {/* Badge: waiting count */}
+                          {waitingInfoCount > 0 && (
+                            <span className="
+                              inline-flex items-center justify-center
+                              min-w-[20px] h-[20px]
+                              rounded-full bg-orange-500 text-white
+                              text-[10px] font-bold px-1.5
+                            ">
+                              {waitingInfoCount}
                             </span>
                           )}
                         </button>
@@ -872,6 +945,32 @@ export const ChatMain: React.FC<{
           workTypes={workTypes}
           checklistTemplates={checklistTemplates}
           setChecklistTemplates={setChecklistTemplates}
+        />
+      )}
+
+      {/* Mobile Received Info Screen */}
+      {isMobileLayout && mobileReceivedInfoOpen && (
+        <TabReceivedInfoMobile
+          open={mobileReceivedInfoOpen}
+          onBack={() => setMobileReceivedInfoOpen(false)}
+          receivedInfos={receivedInfos ?? []}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          mobileMembers={mobileMembers}
+          checklistVariants={mobileChecklistVariants}
+          defaultChecklistVariantId={defaultChecklistVariantId}
+
+          // Pass groups for transfer
+          groups={allGroups} // hoặc groups từ parent scope
+
+          // Callbacks
+          onCreateTaskFromMessage={(payload) => {
+            onCreateTaskFromMessage?.(payload);
+            const assigneeName = mobileMembers.find(m => m.id === payload.assigneeId)?.name || "nhân viên";
+            showInlineToast(`Đã giao việc cho ${assigneeName}`);
+          }}
+
+           onConfirmGroupTransfer={handleConfirmGroupTransfer}
         />
       )}
 
