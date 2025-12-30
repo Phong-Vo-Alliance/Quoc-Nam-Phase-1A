@@ -43,6 +43,7 @@ import { DefaultChecklistMobile } from '../components/DefaultChecklistMobile';
 import { TaskBannerMobile } from '../components/TaskBannerMobile';
 import { TabOwnTasksMobile } from '../components/TabOwnTasksMobile';
 import { TabReceivedInfoMobile } from '../components/TabReceivedInfoMobile';
+import { useHorizontalScroll } from '@/lib/hooks/useHorizontalScroll';
 
 type ViewMode = 'lead' | 'staff';
 
@@ -279,6 +280,8 @@ export const ChatMain: React.FC<{
 
   // Mobile own tasks screen state
   const [mobileOwnTasksOpen, setMobileOwnTasksOpen] = React.useState(false);
+  
+  const tabsScrollRef = useHorizontalScroll<HTMLDivElement>();
 
   // Calculate waiting info count for badge
   const waitingInfoCount = React.useMemo(() => {
@@ -596,18 +599,24 @@ export const ChatMain: React.FC<{
                             setMobileOwnTasksOpen(true);
                           }}
                         >
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                          {/* Icon */}
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full shrink-0">
                             <UserIcon className="h-4 w-4 text-brand-600" />
                           </div>
-                          <span className="text-sm font-normal">Công việc của tôi</span>
 
-                          {/* Badge:  active task count */}
+                          {/* Text - flex-1 text-left */}
+                          <span className="text-sm font-normal flex-1 text-left">
+                            Công việc của tôi
+                          </span>
+
+                          {/* Badge */}
                           {leaderOwnActiveCount > 0 && (
                             <span className="
                               inline-flex items-center justify-center
                               min-w-[20px] h-[20px]
                               rounded-full bg-amber-500 text-white
-                              text-[10px] font-bold px-1. 5
+                              text-[10px] font-bold px-1.5
+                              shrink-0
                             ">
                               {leaderOwnActiveCount}
                             </span>
@@ -624,18 +633,24 @@ export const ChatMain: React.FC<{
                             setMobileReceivedInfoOpen(true);
                           }}
                         >
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                          {/* Icon - cố định 32px */}
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full shrink-0">
                             <Inbox className="h-4 w-4 text-brand-600" />
                           </div>
-                          <span className="text-sm font-normal">Tiếp nhận công việc</span>
 
-                          {/* Badge: waiting count */}
+                          {/* ✅ Text - flex-1 + text-left */}
+                          <span className="text-sm font-normal flex-1 text-left">
+                            Tiếp nhận công việc
+                          </span>
+
+                          {/* ✅ Badge - shrink-0 + ml-auto */}
                           {waitingInfoCount > 0 && (
                             <span className="
                               inline-flex items-center justify-center
                               min-w-[20px] h-[20px]
                               rounded-full bg-orange-500 text-white
                               text-[10px] font-bold px-1.5
+                              shrink-0
                             ">
                               {waitingInfoCount}
                             </span>
@@ -736,15 +751,18 @@ export const ChatMain: React.FC<{
 
       {/* WorkType tabs (mobile) */}
       {isMobileLayout && selectedGroup?.workTypes && selectedGroup.workTypes.length > 0 && (
-        <div className="border-b px-2 pb-0 mt-2">
+        <div
+          ref={tabsScrollRef}
+          className="border-b px-2 pb-0 mt-2 overflow-x-auto scrollbar-hide"
+        >
           <LinearTabs
             tabs={selectedGroup.workTypes.map((w, idx) => {
-              const unread = idx === 1 ? 3 : 0; // ví dụ: tab 2 có 3 tin mới
+              const unread = idx === 1 ? 3 : 0;
 
               return {
                 key: w.id,
                 label: (
-                  <div className="relative inline-flex items-center gap-1">
+                  <div className="relative inline-flex items-center gap-1 whitespace-nowrap">
                     <span>{w.name}</span>
                     {unread > 0 && (
                       <span className="ml-1 inline-flex min-w-[16px] h-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-medium text-white">
@@ -755,7 +773,7 @@ export const ChatMain: React.FC<{
                 ),
               };
             })}
-            
+
             active={selectedWorkTypeId ?? currentWorkTypeId ?? selectedGroup.workTypes[0]?.id}
             onChange={(id) => onChangeWorkType?.(id)}
             textClass="text-xs"
@@ -943,6 +961,12 @@ export const ChatMain: React.FC<{
           }}
           taskLogs={taskLogs}
           workTypes={workTypes}
+
+          groupName={selectedGroup?.name ?? title}
+          workTypeName={
+            workTypes?.find((w) => w.id === (selectedWorkTypeId ?? currentWorkTypeId))?.name ?? "—"
+          }
+
           checklistTemplates={checklistTemplates}
           setChecklistTemplates={setChecklistTemplates}
         />

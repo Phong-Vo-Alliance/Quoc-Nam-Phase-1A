@@ -1,10 +1,10 @@
 import React from 'react';
-import { ArrowLeft, UserIcon, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronLeft, UserIcon, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import type { Task, TaskLogMessage, ChecklistItem, ChecklistTemplateMap } from '../types';
 
 interface TabOwnTasksMobileProps {
   open: boolean;
-  onBack: () => void;
+  onBack:  () => void;
 
   currentUserId: string;
   tasks: Task[];
@@ -12,20 +12,24 @@ interface TabOwnTasksMobileProps {
 
   members: Array<{ id: string; name: string }>;
 
-  onChangeTaskStatus?:  (id: string, next: Task["status"]) => void; // Optional
-  onToggleChecklist?:  (taskId: string, itemId: string, done: boolean) => void; // Optional
-  onUpdateTaskChecklist?:  (taskId: string, next:  ChecklistItem[]) => void; // Optional
-  onOpenTaskLog:  (taskId: string) => void;
+  onChangeTaskStatus? :   (id: string, next: Task["status"]) => void; // Optional
+  onToggleChecklist? :  (taskId: string, itemId: string, done: boolean) => void; // Optional
+  onUpdateTaskChecklist? :  (taskId: string, next:   ChecklistItem[]) => void; // Optional
+  onOpenTaskLog:   (taskId: string) => void;
 
-  taskLogs?:  Record<string, TaskLogMessage[]>;
+  taskLogs? :  Record<string, TaskLogMessage[]>;
   workTypes?: Array<{ id: string; name: string }>;
+
+  // ✅ Bổ sung props cho Header
+  groupName?: string;
+  workTypeName?: string;
 
   // Checklist templates
   checklistTemplates?: ChecklistTemplateMap; // ✅ Use ChecklistTemplateMap
   setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap>>; // Use ChecklistTemplateMap
 }
 
-export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
+export const TabOwnTasksMobile:  React.FC<TabOwnTasksMobileProps> = ({
   open,
   onBack,
   currentUserId,
@@ -38,19 +42,21 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
   onOpenTaskLog,
   taskLogs,
   workTypes,
+  groupName = "Nhóm",
+  workTypeName = "—",
   checklistTemplates,
   setChecklistTemplates,
 }) => {
-  // Collapse states
-  const [showTodo, setShowTodo] = React.useState(true);
-  const [showInProgress, setShowInProgress] = React.useState(true);
-  const [showDone, setShowDone] = React.useState(true);
+  // ✅ Collapse states - Mặc định collapse lại
+  const [showTodo, setShowTodo] = React.useState(false);
+  const [showInProgress, setShowInProgress] = React.useState(false);
+  const [showDone, setShowDone] = React.useState(false);
 
   // Modal state
   const [showCompletedModal, setShowCompletedModal] = React.useState(false);
 
-  // Helper:  check if date is today
-  const isToday = (iso?: string) => {
+  // Helper:   check if date is today
+  const isToday = (iso?:  string) => {
     if (!iso) return false;
     const d = new Date(iso);
     const t = new Date();
@@ -66,7 +72,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
     return tasks.filter(t =>
       t.assigneeId === currentUserId &&
       isToday(t.createdAt) &&
-      (! selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
+      (!  selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
     );
   }, [tasks, currentUserId, selectedWorkTypeId]);
 
@@ -85,7 +91,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
       .filter(t =>
         t.assigneeId === currentUserId &&
         t.status === 'done' &&
-        (! selectedWorkTypeId || t.workTypeId === selectedWorkTypeId)
+        (! selectedWorkTypeId || t. workTypeId === selectedWorkTypeId)
       )
       .sort((a, b) => {
         const da = new Date(a.updatedAt || a.createdAt || '');
@@ -97,7 +103,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
   const activeCount = buckets.todo.length + buckets.inProgress.length;
 
   // Format time helper
-  const formatTime = (iso:  string) => {
+  const formatTime = (iso:   string) => {
     const d = new Date(iso);
     return d.toLocaleTimeString('vi-VN', {
       hour: '2-digit',
@@ -105,24 +111,33 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
     });
   };
 
-  const truncateTitle = (t?:  string) =>
+  const truncateTitle = (t? :  string) =>
     (t || '').length > 80 ? (t || '').slice(0, 77) + '…' : t || '';
 
-  if (! open) return null;
+  if (!  open) return null;
 
   return (
     <div className="absolute inset-0 z-50 bg-white flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b bg-white">
-        <button
-          onClick={onBack}
-          className="p-2 -ml-2 rounded-full hover: bg-gray-100 active:bg-gray-200 transition"
-        >
-          <ArrowLeft className="h-5 w-5 text-gray-700" />
-        </button>
-        <h1 className="text-lg font-semibold text-gray-900 flex-1">
-          Công Việc Của Tôi
-        </h1>
+      {/* ✅ Header - Cập nhật theo TabTaskMobile */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between px-3 py-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBack}
+              className="p-2 rounded-full hover:bg-brand-100 active:bg-brand-300 transition"
+            >
+              <ChevronLeft className="h-5 w-5 text-brand-600" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-gray-800 truncate">
+                Công Việc Của Tôi
+              </div>
+              <div className="text-xs text-gray-500 truncate">
+                {groupName} • <span className="text-brand-600">{workTypeName}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Content */}
@@ -137,16 +152,16 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
           </div>
 
           <div className="text-xs text-gray-600">
-            {activeCount > 0 ?  (
+            {activeCount > 0 ?   (
               <>
                 <span className="font-semibold text-brand-700">{activeCount}</span>
                 {' '}công việc đang thực hiện •{' '}
                 <span>{buckets.todo.length} chưa xử lý</span> •{' '}
-                <span>{buckets.inProgress.length} đang xử lý</span>
+                <span>{buckets.inProgress. length} đang xử lý</span>
                 {buckets.doneToday.length > 0 && (
                   <>
                     {' '}• <span className="text-emerald-600">
-                      {buckets.doneToday. length} hoàn thành hôm nay
+                      {buckets. doneToday.  length} hoàn thành hôm nay
                     </span>
                   </>
                 )}
@@ -160,7 +175,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
         </div>
 
         {/* Empty state */}
-        {activeCount === 0 && buckets. doneToday.length === 0 && (
+        {activeCount === 0 && buckets.  doneToday.length === 0 && (
           <div className="rounded-xl border border-dashed bg-white/60 p-8 text-center">
             <UserIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
             <p className="text-sm text-gray-500 font-medium mb-1">
@@ -173,7 +188,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
         )}
 
         {/* TODO section */}
-        {buckets. todo.length > 0 && (
+        {buckets.  todo.length > 0 && (
           <section>
             <div
               className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 cursor-pointer select-none active:opacity-70"
@@ -182,7 +197,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
               <span className="inline-flex h-2 w-2 rounded-full bg-amber-400" />
               <span>Chưa xử lý ({buckets.todo.length})</span>
               <span className="ml-auto text-gray-400 text-xs">
-                {showTodo ?  '▲' : '▼'}
+                {showTodo ?   '▲' : '▼'}
               </span>
             </div>
 
@@ -190,7 +205,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
               <div className="space-y-3">
                 {buckets.todo.map(t => (
                   <TaskCardMobile
-                    key={t. id}
+                    key={t.  id}
                     task={t}
                     members={members}
                     isLeaderOwnTask={true}
@@ -209,7 +224,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
         )}
 
         {/* IN_PROGRESS section */}
-        {buckets.inProgress.length > 0 && (
+        {buckets. inProgress.length > 0 && (
           <section>
             <div
               className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 cursor-pointer select-none active:opacity-70"
@@ -218,15 +233,15 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
               <span className="inline-flex h-2 w-2 rounded-full bg-sky-400" />
               <span>Đang xử lý ({buckets.inProgress.length})</span>
               <span className="ml-auto text-gray-400 text-xs">
-                {showInProgress ? '▲' : '▼'}
+                {showInProgress ?  '▲' : '▼'}
               </span>
             </div>
 
             {showInProgress && (
               <div className="space-y-3">
-                {buckets.inProgress.map(t => (
+                {buckets.inProgress. map(t => (
                   <TaskCardMobile
-                    key={t.id}
+                    key={t. id}
                     task={t}
                     members={members}
                     isLeaderOwnTask={true}
@@ -281,7 +296,7 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
         )}
 
         {/* Link to all completed */}
-        {allCompleted.length > 0 && (
+        {allCompleted. length > 0 && (
           <div className="text-center pt-2 pb-4">
             <button
               className="text-sm text-brand-700 hover:text-brand-800 active:opacity-70 font-medium"
@@ -310,21 +325,21 @@ export const TabOwnTasksMobile: React.FC<TabOwnTasksMobileProps> = ({
 };
 
 // ============================================
-// Task Card Component (simplified for mobile)
+// ✅ Task Card Component - Cập nhật checklist UI
 // ============================================
-const TaskCardMobile: React. FC<{
+const TaskCardMobile: React.  FC<{
   task: Task;
-  members: Array<{ id:  string; name: string }>;
-  isLeaderOwnTask:  boolean;
-  onChangeStatus?:  (id: string, next: Task["status"]) => void;
-  onToggleChecklist?: (taskId: string, itemId: string, done: boolean) => void;
-  onUpdateTaskChecklist?:  (taskId: string, next:  ChecklistItem[]) => void;
-  onOpenTaskLog: (taskId: string) => void;
+  members: Array<{ id:   string; name: string }>;
+  isLeaderOwnTask:   boolean;
+  onChangeStatus? :  (id: string, next: Task["status"]) => void;
+  onToggleChecklist?:  (taskId: string, itemId: string, done: boolean) => void;
+  onUpdateTaskChecklist? :  (taskId: string, next:   ChecklistItem[]) => void;
+  onOpenTaskLog:  (taskId: string) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
-  formatTime: (iso: string) => string;
+  formatTime: (iso:  string) => string;
   truncateTitle: (t?: string) => string;
 }> = ({
-  task:  t,
+  task:   t,
   members,
   isLeaderOwnTask,
   onChangeStatus,
@@ -337,7 +352,7 @@ const TaskCardMobile: React. FC<{
 }) => {
   const [checklistOpen, setChecklistOpen] = React.useState(false);
 
-  const total = t.checklist?.length ??  0;
+  const total = t.checklist?. length ??  0;
   const doneCount = t.checklist?. filter(c => c.done).length ?? 0;
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
@@ -352,7 +367,7 @@ const TaskCardMobile: React. FC<{
 
       {/* Meta */}
       <div className="text-xs text-gray-500 mb-2">
-        Loại việc:  <span className="font-medium text-gray-700">{workTypeLabel}</span>
+        Loại việc:   <span className="font-medium text-gray-700">{workTypeLabel}</span>
         {t.checklistVariantName && (
           <>
             {' '}• <span className="font-medium text-emerald-600">{t.checklistVariantName}</span>
@@ -360,9 +375,9 @@ const TaskCardMobile: React. FC<{
         )}
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar - Thêm lại */}
       {total > 0 && (
-        <div className="mb-2 h-1. 5 w-full rounded-full bg-gray-100 overflow-hidden">
+        <div className="mb-2 h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all"
             style={{ width: `${progress}%` }}
@@ -381,17 +396,49 @@ const TaskCardMobile: React. FC<{
             Checklist ({doneCount}/{total})
           </div>
 
+          {/* Checklist items - Cập nhật UI đồng nhất */}
           {checklistOpen && (
-            <ul className="mt-2 space-y-1">
-              {t.checklist?. map(c => (
-                <li key={c.id} className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={c.done}
-                    onChange={(e) => onToggleChecklist?.(t.id, c.id, e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-emerald-600"
-                  />
-                  <span className={c.done ? 'line-through text-gray-400' : 'text-gray-700'}>
+            <ul className="mt-2 space-y-2">
+              {t.checklist?.map(c => (
+                <li key={c.id} className="flex items-center gap-2 rounded-lg px-2 py-2 bg-gray-50">
+                  {/* Check icon consistence với TabTaskMobile */}
+                  {c.done ? (
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                        className="shrink-0 bg-white active:bg-emerald-50"
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          minWidth: '20px',
+                          minHeight: '20px',
+                          borderRadius: '50%',
+                          border: '2px solid rgb(110, 231, 183)', // emerald-300
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleChecklist?.(t.id, c.id, true);
+                      }}
+                      aria-label="Đánh dấu hoàn thành"
+                    />
+                  )}
+
+                  {/* Label - Cho phép click để uncheck nếu done */}
+                  <span
+                    className={`flex-1 min-w-0 text-xs leading-relaxed ${c.done ? 'text-gray-400 line-through cursor-pointer' : 'text-gray-700'}`}
+                    onClick={() => {
+                      if (c.done) {
+                        onToggleChecklist?.(t.id, c.id, false);
+                      }
+                    }}
+                  >
                     {c.label}
                   </span>
                 </li>
@@ -401,8 +448,8 @@ const TaskCardMobile: React. FC<{
         </div>
       )}
 
-      {/* Footer:  time + actions */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t">
+      {/* Footer:   time + actions */}
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-200">
         <div className="text-xs text-gray-400">
           {t.createdAt && formatTime(t.createdAt)}
         </div>
@@ -445,15 +492,15 @@ const CompletedTasksModalMobile: React.FC<{
   open: boolean;
   onClose: () => void;
   tasks: Task[];
-  members:  Array<{ id: string; name: string }>;
-  isToday: (iso?:  string) => boolean;
+  members:   Array<{ id: string; name: string }>;
+  isToday: (iso? :   string) => boolean;
   formatTime: (iso: string) => string;
-  truncateTitle:  (t?: string) => string;
+  truncateTitle:   (t?: string) => string;
 }> = ({ open, onClose, tasks, members, isToday, formatTime, truncateTitle }) => {
   if (!open) return null;
 
   // Group by date
-  const grouped:  Record<string, Task[]> = {};
+  const grouped:   Record<string, Task[]> = {};
   tasks.forEach(t => {
     const dateStr = t.updatedAt || t.createdAt;
     if (!dateStr) return;
@@ -461,8 +508,8 @@ const CompletedTasksModalMobile: React.FC<{
     const date = new Date(dateStr);
     const key = date.toLocaleDateString('vi-VN', {
       day: '2-digit',
-      month:  '2-digit',
-      year: 'numeric',
+      month: '2-digit',
+      year:  'numeric',
     });
 
     if (!grouped[key]) grouped[key] = [];
@@ -471,7 +518,7 @@ const CompletedTasksModalMobile: React.FC<{
 
   const today = new Date().toLocaleDateString('vi-VN', {
     day: '2-digit',
-    month:  '2-digit',
+    month: '2-digit',
     year: 'numeric',
   });
 
@@ -524,7 +571,7 @@ const CompletedTasksModalMobile: React.FC<{
                             <span>
                               Hoàn tất lúc{' '}
                               <span className="font-medium text-gray-700">
-                                {t.updatedAt ?  formatTime(t.updatedAt) : '--:--'}
+                                {t.updatedAt ?   formatTime(t.updatedAt) : '--:--'}
                               </span>
                             </span>
 
@@ -536,10 +583,10 @@ const CompletedTasksModalMobile: React.FC<{
                           </div>
 
                           {(t.workTypeName || t.checklistVariantName) && (
-                            <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                            <div className="mt-1. 5 flex items-center gap-1.5 text-[10px]">
                               {t.workTypeName && (
                                 <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
-                                  {t. workTypeName}
+                                  {t.  workTypeName}
                                 </span>
                               )}
                               {t.checklistVariantName && (

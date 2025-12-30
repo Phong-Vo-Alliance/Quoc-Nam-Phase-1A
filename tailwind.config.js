@@ -78,5 +78,41 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),    
+    function ({ addUtilities }) {
+      addUtilities({
+        // Ẩn scrollbar hoàn toàn
+        '.scrollbar-hide': {
+          /* Firefox */
+          'scrollbar-width': 'none',
+          /* Safari and Chrome */
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        },
+        
+        // Scrollbar mỏng cho desktop (optional)
+        '.scrollbar-thin': {
+          /* Firefox */
+          'scrollbar-width': 'thin',
+          /* Chrome, Safari */
+          '&::-webkit-scrollbar': {
+            width: '6px',
+            height: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#cbd5e0',
+            borderRadius: '10px',
+          },
+          '&::-webkit-scrollbar-thumb:hover':  {
+            background: '#a0aec0',
+          },
+        },
+      });
+    },
+  ],
 }
