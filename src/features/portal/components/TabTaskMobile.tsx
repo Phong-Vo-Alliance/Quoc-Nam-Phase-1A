@@ -315,7 +315,19 @@ const MobileTaskCard: React.FC<{
                 ) : (
                   <button
                     type="button"
-                    className="h-5 w-5 shrink-0 rounded-full border-2 border-emerald-300 bg-white active:bg-emerald-50"
+                    className="shrink-0 bg-white active:bg-emerald-50"
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          minWidth: '20px',
+                          minHeight: '20px',
+                          borderRadius: '50%',
+                          border: '2px solid rgb(110, 231, 183)', // emerald-300
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
                     onClick={() => onToggleChecklist?.(t.id, c.id, true)}
                   />
                 )}
