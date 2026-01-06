@@ -118,6 +118,8 @@ interface WorkspaceViewProps {
   onOpenTaskLog?: (taskId: string) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
   onOpenSourceMessage?: (messageId: string) => void;
+  onScrollComplete?: () => void;
+  scrollToMessageId?: string;
 
   layoutMode?: "desktop" | "mobile";
 
@@ -139,6 +141,7 @@ interface WorkspaceViewProps {
   checklistTemplates: Record<string, Record<string, ChecklistTemplateItem[]>>;
 
   onOpenWorkTypeManager?: () => void;
+  
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
@@ -198,6 +201,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onOpenTaskLog,
     taskLogs,
     onOpenSourceMessage,
+    onScrollComplete,
+    scrollToMessageId,
     layoutMode = "desktop",
     onOpenQuickMsg,
     onOpenPinned,
@@ -213,7 +218,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
     onUpdateTaskChecklist,
     checklistTemplates,
 
-    onOpenWorkTypeManager,
+    onOpenWorkTypeManager,    
   } = props;
 
   const isMobile = layoutMode === "mobile";
@@ -470,6 +475,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
 
                     checklistTemplates={checklistTemplates}
                     setChecklistTemplates={setChecklistTemplates}
+
+                    scrollToMessageId={scrollToMessageId}
+                    onTriggerScroll={onOpenSourceMessage}
+                    onScrollComplete={onScrollComplete}
                   />
                 </div>
               )}
@@ -707,6 +716,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = (props) => {
 
           onAssignInfo={onAssignInfo}          
           onOpenGroupTransfer={openTransferSheet}
+
+          scrollToMessageId={scrollToMessageId}
+          onTriggerScroll={onOpenSourceMessage}
+          onScrollComplete={onScrollComplete}
         />
       </div>
 

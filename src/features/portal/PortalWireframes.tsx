@@ -384,34 +384,39 @@ export default function PortalWireframes({ portalMode = "desktop" }: PortalWiref
     if (targetId) setScrollToMessageId(targetId);
   };
 
-// Dùng chung cho các nơi muốn "xem tin nhắn gốc"
-// (pinned message, xem từ tab Thông tin, v.v.)
-const handleOpenSourceMessage = React.useCallback(
-  (messageId: string) => {
-    setScrollToMessageId(messageId);
-  },
-  []
-);
+  // Dùng chung cho các nơi muốn "xem tin nhắn gốc"
+  // (pinned message, xem từ tab Thông tin, v.v.)
+  const handleOpenSourceMessage = React.useCallback(
+    (messageId: string) => {
+      setScrollToMessageId(messageId);
+    },
+    []
+  );
+
+  // Callback to reset scroll state (called from ChatMain after scroll completes)
+  const handleScrollComplete = React.useCallback(() => {
+    setScrollToMessageId(undefined);
+  }, []);
 
   // Khi scrollToMessageId thay đổi -> cuộn tới tin nhắn tương ứng
-  React.useEffect(() => {
-    if (!scrollToMessageId) return;
+  // React.useEffect(() => {
+  //   if (!scrollToMessageId) return;
 
-    const el = document.getElementById(`msg-${scrollToMessageId}`);
-    if (el) {
-      // Cuộn vào giữa màn hình
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+  //   const el = document.getElementById(`msg-${scrollToMessageId}`);
+  //   if (el) {
+  //     // Cuộn vào giữa màn hình
+  //     el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-      // Thêm highlight giống pinned
-      el.classList.add("pinned-highlight");
-      window.setTimeout(() => {
-        el.classList.remove("pinned-highlight");
-      }, 2000);
-    }
+  //     // Thêm highlight giống pinned
+  //     el.classList.add("pinned-highlight");
+  //     window.setTimeout(() => {
+  //       el.classList.remove("pinned-highlight");
+  //     }, 2000);
+  //   }
 
-    // reset để lần sau click lại vẫn trigger được
-    setScrollToMessageId(undefined);
-  }, [scrollToMessageId]);
+  //   // reset để lần sau click lại vẫn trigger được
+  //   setScrollToMessageId(undefined);
+  // }, [scrollToMessageId]);
 
   // helpers
   const setThreadOwner = (id: string, owner: string) =>
@@ -1208,6 +1213,8 @@ const handleOpenSourceMessage = React.useCallback(
             }}
             taskLogs={taskLogs}
             onOpenSourceMessage={handleOpenSourceMessage}
+            onScrollComplete={handleScrollComplete}
+            scrollToMessageId={scrollToMessageId}
             onOpenQuickMsg={() => {
               // Mobile: tạm hiển thị toast, có thể thay bằng mở QuickMessageManager khi bạn muốn mount ở mobile
               pushToast("Tin nhắn nhanh: tính năng đang phát triển cho mobile.", "info");

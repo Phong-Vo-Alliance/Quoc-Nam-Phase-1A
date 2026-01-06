@@ -93,7 +93,8 @@ const MobileTaskCard: React.FC<{
   onUpdateTaskChecklist?:  (taskId: string, next:  ChecklistItem[]) => void;
   onOpenTaskLog?: (taskId: string) => void;
   currentUserId?: string;
-}> = ({ t, members, viewMode, onChangeStatus, onReassign, onToggleChecklist, onUpdateTaskChecklist, onOpenTaskLog, currentUserId }) => {
+  onClickTitle?: (sourceMessageId:  string) => void;
+}> = ({ t, members, viewMode, onChangeStatus, onReassign, onToggleChecklist, onUpdateTaskChecklist, onOpenTaskLog, currentUserId, onClickTitle }) => {
   const [showChecklist, setShowChecklist] = React.useState(false);
   const [showActions, setShowActions] = React. useState(false);
   
@@ -230,9 +231,37 @@ const MobileTaskCard: React.FC<{
         {/* Header:  Title + Status */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-gray-800 line-clamp-2">
+            {/* UPDATED: Clickable Title */}
+            <a
+              href={t.sourceMessageId ? `#msg-${t.sourceMessageId}` : undefined}
+              onClick={(e) => {
+                if (!t.sourceMessageId) {
+                  e.preventDefault();
+                  return;
+                }
+                e.preventDefault();
+                onClickTitle?.(t.sourceMessageId);
+              }}
+              className={`
+                block w-full text-left
+                text-sm font-semibold leading-snug
+                line-clamp-2
+                transition-colors duration-200
+                ${t.sourceMessageId
+                          ? `
+                    text-gray-800 
+                    active:text-brand-600 
+                    active:underline
+                    active:decoration-brand-500
+                    cursor-pointer
+                  `
+                  : 'text-gray-400 no-underline'
+                }
+              `}
+              aria-disabled={!t.sourceMessageId}
+            >
               {truncateTitle(t.title || t.description, 80)}
-            </div>
+            </a>
           </div>
           <StatusBadge s={t.status} compact />
         </div>
@@ -465,6 +494,7 @@ export const TabTaskMobile: React. FC<{
   // Checklist templates
   checklistTemplates?: ChecklistTemplateMap;
   checklistVariants?: ChecklistVariant[];
+  onOpenSourceMessage?: (messageId: string) => void;
 }> = ({
   open,
   onBack,
@@ -484,6 +514,7 @@ export const TabTaskMobile: React. FC<{
   taskLogs,
   checklistTemplates,
   checklistVariants,
+  onOpenSourceMessage,
 }) => {
   const [showFilterSheet, setShowFilterSheet] = React.useState(false);
   const [assigneeFilter, setAssigneeFilter] = React.useState<string>("all");
@@ -627,6 +658,13 @@ export const TabTaskMobile: React. FC<{
                           onUpdateTaskChecklist={onUpdateTaskChecklist}
                           onOpenTaskLog={onOpenTaskLog}
                           currentUserId={currentUserId}
+                          onClickTitle={(messageId) => {
+                            // Close mobile task panel
+                            onBack();
+
+                            // Trigger scroll in ChatMain
+                            onOpenSourceMessage?.(messageId);
+                          }}
                         />
                       ))}
                       {staffBuckets.inProgress.map((t) => (
@@ -641,6 +679,13 @@ export const TabTaskMobile: React. FC<{
                           onUpdateTaskChecklist={onUpdateTaskChecklist}
                           onOpenTaskLog={onOpenTaskLog}
                           currentUserId={currentUserId}
+                          onClickTitle={(messageId) => {
+                            // Close mobile task panel
+                            onBack();
+
+                            // Trigger scroll in ChatMain
+                            onOpenSourceMessage?.(messageId);
+                          }}
                         />
                       ))}
                     </>
@@ -679,6 +724,13 @@ export const TabTaskMobile: React. FC<{
                         onUpdateTaskChecklist={onUpdateTaskChecklist}
                         onOpenTaskLog={onOpenTaskLog}
                         currentUserId={currentUserId}
+                        onClickTitle={(messageId) => {
+                          // Close mobile task panel
+                          onBack();
+
+                          // Trigger scroll in ChatMain
+                          onOpenSourceMessage?.(messageId);
+                        }}
                       />
                     ))
                   )}
@@ -760,6 +812,13 @@ export const TabTaskMobile: React. FC<{
                         onUpdateTaskChecklist={onUpdateTaskChecklist}
                         onOpenTaskLog={onOpenTaskLog}
                         currentUserId={currentUserId}
+                        onClickTitle={(messageId) => {
+                          // Close mobile task panel
+                          onBack();
+
+                          // Trigger scroll in ChatMain
+                          onOpenSourceMessage?.(messageId);
+                        }}
                       />
                     ))}
                   </div>
@@ -791,6 +850,13 @@ export const TabTaskMobile: React. FC<{
                         onUpdateTaskChecklist={onUpdateTaskChecklist}
                         onOpenTaskLog={onOpenTaskLog}
                         currentUserId={currentUserId}
+                        onClickTitle={(messageId) => {
+                          // Close mobile task panel
+                          onBack();
+
+                          // Trigger scroll in ChatMain
+                          onOpenSourceMessage?.(messageId);
+                        }}
                       />
                     ))}
                   </div>
@@ -822,6 +888,13 @@ export const TabTaskMobile: React. FC<{
                         onUpdateTaskChecklist={onUpdateTaskChecklist}
                         onOpenTaskLog={onOpenTaskLog}
                         currentUserId={currentUserId}
+                        onClickTitle={(messageId) => {
+                          // Close mobile task panel
+                          onBack();
+
+                          // Trigger scroll in ChatMain
+                          onOpenSourceMessage?.(messageId);
+                        }}
                       />
                     ))}
                   </div>
@@ -853,6 +926,13 @@ export const TabTaskMobile: React. FC<{
                         onUpdateTaskChecklist={onUpdateTaskChecklist}
                         onOpenTaskLog={onOpenTaskLog}
                         currentUserId={currentUserId}
+                        onClickTitle={(messageId) => {
+                          // Close mobile task panel
+                          onBack();
+
+                          // Trigger scroll in ChatMain
+                          onOpenSourceMessage?.(messageId);
+                        }}
                       />
                     ))}
 

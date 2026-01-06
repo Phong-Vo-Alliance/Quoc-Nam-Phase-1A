@@ -120,6 +120,7 @@ const TaskCard: React.FC<{
   onUpdateTaskChecklist?: (taskId: string, next: ChecklistItem[]) => void;
   taskLogs?: Record<string, TaskLogMessage[]>;
   onOpenTaskLog?: (taskId: string) => void;
+  onClickTitle?: (sourceMessageId: string) => void;
 }> = ({ 
   t, 
   members, 
@@ -130,7 +131,8 @@ const TaskCard: React.FC<{
   onToggleChecklist, 
   onUpdateTaskChecklist, 
   taskLogs, 
-  onOpenTaskLog 
+  onOpenTaskLog,
+  onClickTitle,
 }) => {
   const [open, setOpen] = React.useState(false);
   const assigneeName = members.find((m) => m.id === t.assigneeId)?.name ?? t.assigneeId;
@@ -232,7 +234,48 @@ const TaskCard: React.FC<{
           <div className="min-w-0 flex-1">
             {/* Title */}
             <div className="text-[13px] font-semibold leading-snug truncate">
-              {truncateMessageTitle(t.title || t.description)}
+              {/* ✅ UPDATED:  Clickable Title */}
+              <a
+                href={t.sourceMessageId ? `#msg-${t.sourceMessageId}` : undefined}
+                onClick={(e) => {
+                  if (!t.sourceMessageId) {
+                    e.preventDefault();
+                    return;
+                  }
+                  e.preventDefault();
+                  onClickTitle?.(t.sourceMessageId);
+                }}
+                className={`
+                  block w-full text-left
+                  text-[13px] font-semibold leading-snug
+                  truncate
+                  transition-colors duration-200
+                  ${t.sourceMessageId
+                                ? `
+                      text-gray-800 
+                      hover:text-brand-600 
+                      hover:underline 
+                      hover:decoration-brand-500
+                      hover:decoration-2
+                      cursor-pointer
+                      focus:outline-none 
+                      focus:ring-2 
+                      focus:ring-brand-500/20 
+                      focus:ring-offset-1
+                      rounded-sm
+                    `
+                    : 'text-gray-400 cursor-not-allowed no-underline'
+                  }
+                `}
+                title={
+                  t.sourceMessageId
+                    ? "📌 Nhấn để xem tin nhắn gốc"
+                    : "⚠️ Không có tin nhắn nguồn"
+                }
+                aria-disabled={!t.sourceMessageId}
+              >
+                {truncateMessageTitle(t.title || t.description)}
+              </a>
             </div>
 
             {/* Meta: loại việc, progress, assignee */}
@@ -674,7 +717,7 @@ export const RightPanel: React.FC<{
   taskLogs?: Record<string, TaskLogMessage[]>;
   onOpenTaskLog?: (taskId: string) => void;
   onOpenSourceMessage?: (messageId: string) => void;
-  checklistVariants?: ChecklistVariant[];
+  checklistVariants?: ChecklistVariant[];  
 }> = ({
   tab,
   setTab,
@@ -1028,6 +1071,9 @@ export const RightPanel: React.FC<{
                             onUpdateTaskChecklist?.(taskId, next)
                           }}
                           taskLogs={taskLogs}
+                          onClickTitle={(messageId) => {
+                            onOpenSourceMessage?.(messageId);
+                          }}
                           onOpenTaskLog={onOpenTaskLog}
                         />
                       ))}
@@ -1044,6 +1090,9 @@ export const RightPanel: React.FC<{
                             onUpdateTaskChecklist?.(taskId, next)
                           }}
                           taskLogs={taskLogs}
+                          onClickTitle={(messageId) => {
+                            onOpenSourceMessage?.(messageId);
+                          }}
                           onOpenTaskLog={onOpenTaskLog}
                         />
                       ))}
@@ -1070,6 +1119,9 @@ export const RightPanel: React.FC<{
                           onReassign={onReassignTask}
                           onToggleChecklist={onToggleChecklist}
                           taskLogs={taskLogs}
+                          onClickTitle={(messageId) => {
+                            onOpenSourceMessage?.(messageId);
+                          }}
                           onOpenTaskLog={onOpenTaskLog}
                         />
                       ))}
@@ -1406,6 +1458,9 @@ export const RightPanel: React.FC<{
                                     onReassign={onReassignTask}
                                     onToggleChecklist={onToggleChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
@@ -1438,6 +1493,9 @@ export const RightPanel: React.FC<{
                                     onToggleChecklist={onToggleChecklist}
                                     onUpdateTaskChecklist={onUpdateTaskChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
@@ -1473,6 +1531,9 @@ export const RightPanel: React.FC<{
                                     onReassign={onReassignTask}
                                     onToggleChecklist={onToggleChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
@@ -1507,6 +1568,9 @@ export const RightPanel: React.FC<{
                                     onReassign={onReassignTask}
                                     onToggleChecklist={onToggleChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
@@ -1739,6 +1803,9 @@ export const RightPanel: React.FC<{
                                     onToggleChecklist={onToggleChecklist}
                                     onUpdateTaskChecklist={onUpdateTaskChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
@@ -1777,6 +1844,9 @@ export const RightPanel: React.FC<{
                                     onToggleChecklist={onToggleChecklist}
                                     onUpdateTaskChecklist={onUpdateTaskChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
@@ -1815,6 +1885,9 @@ export const RightPanel: React.FC<{
                                     onToggleChecklist={onToggleChecklist}
                                     onUpdateTaskChecklist={onUpdateTaskChecklist}
                                     taskLogs={taskLogs}
+                                    onClickTitle={(messageId) => {
+                                      onOpenSourceMessage?.(messageId);
+                                    }}
                                     onOpenTaskLog={onOpenTaskLog}
                                   />
                                 ))}
