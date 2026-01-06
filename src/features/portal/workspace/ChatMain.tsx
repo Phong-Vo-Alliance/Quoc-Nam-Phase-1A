@@ -163,6 +163,8 @@ export const ChatMain: React.FC<{
   selectedWorkTypeId?: string;
   onChangeWorkType?: (id: string) => void;
   scrollToMessageId?: string;
+  onTriggerScroll?: (messageId: string) => void;
+  onScrollComplete?: () => void;
   onReceiveInfo?: (message: Message) => void;
   receivedInfos?: ReceivedInfo[];
   onAssignFromMessage?: (msg: Message) => void;
@@ -234,6 +236,8 @@ export const ChatMain: React.FC<{
   selectedWorkTypeId,
   onChangeWorkType,
   scrollToMessageId,
+  onTriggerScroll,
+  onScrollComplete,
   onReceiveInfo,
   receivedInfos,
   onAssignFromMessage,
@@ -442,15 +446,39 @@ export const ChatMain: React.FC<{
 
   React.useEffect(() => {
     if (!scrollToMessageId) return;
-    const el = document.getElementById(`msg-${scrollToMessageId}`);
-    if (el) {
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      el.classList.add('ring-2', 'ring-brand-500', 'pinned-highlight');
-      setTimeout(() => {
-        el.classList.remove('ring-2', 'ring-brand-500', 'pinned-highlight');
-      }, 2000);
-    }
-  }, [scrollToMessageId]);
+
+    // ✅ Small delay to ensure DOM is ready
+    const scrollTimeout = setTimeout(() => {
+      const el = document.getElementById(`msg-${scrollToMessageId}`);
+
+      if (el) {
+        // ✅ Scroll to center
+        el.scrollIntoView({
+          block: 'center',
+          behavior: 'smooth',
+          inline: 'nearest'
+        });
+
+        // ✅ Add highlight
+        el.classList.add('ring-2', 'ring-brand-500', 'pinned-highlight');
+
+        // ✅ Remove highlight after 3 seconds
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-brand-500', 'pinned-highlight');
+        }, 3000);
+
+        // ✅ Reset parent state after scroll animation completes
+        setTimeout(() => {
+          onScrollComplete?.(); // Call parent callback
+        }, 500); // Wait for smooth scroll to finish
+      } else {
+        // Message not found, reset immediately
+        onScrollComplete?.();
+      }
+    }, 100); // Delay to ensure DOM ready
+
+    return () => clearTimeout(scrollTimeout);
+  }, [scrollToMessageId, onScrollComplete]);
 
   const handlePickImage = () => imageInputRef.current?.click();
   const handlePickFile = () => fileInputRef.current?.click();
@@ -969,6 +997,11 @@ export const ChatMain: React.FC<{
 
           checklistTemplates={checklistTemplates}
           setChecklistTemplates={setChecklistTemplates}
+          
+          onOpenSourceMessage={(messageId) => {
+            setMobileOwnTasksOpen(false);
+            onTriggerScroll?.(messageId);
+          }}
         />
       )}
 
@@ -1067,6 +1100,10 @@ export const ChatMain: React.FC<{
           checklistVariants={
             selectedGroup?.workTypes?.find((w) => w.id === selectedWorkTypeId)?.checklistVariants
           }
+          onOpenSourceMessage={(messageId) => {
+            setMobileTaskOpen(false);
+            onTriggerScroll?.(messageId); // Call parent callback
+          }}
         />
       )}
 

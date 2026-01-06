@@ -27,6 +27,8 @@ interface TabOwnTasksMobileProps {
   // Checklist templates
   checklistTemplates?: ChecklistTemplateMap; // ✅ Use ChecklistTemplateMap
   setChecklistTemplates?: React.Dispatch<React.SetStateAction<ChecklistTemplateMap>>; // Use ChecklistTemplateMap
+
+  onOpenSourceMessage?: (messageId: string) => void;
 }
 
 export const TabOwnTasksMobile:  React.FC<TabOwnTasksMobileProps> = ({
@@ -46,6 +48,7 @@ export const TabOwnTasksMobile:  React.FC<TabOwnTasksMobileProps> = ({
   workTypeName = "—",
   checklistTemplates,
   setChecklistTemplates,
+  onOpenSourceMessage,
 }) => {
   // ✅ Collapse states - Mặc định collapse lại
   const [showTodo, setShowTodo] = React.useState(false);
@@ -338,6 +341,7 @@ const TaskCardMobile: React.  FC<{
   taskLogs?: Record<string, TaskLogMessage[]>;
   formatTime: (iso:  string) => string;
   truncateTitle: (t?: string) => string;
+  onClickTitle?: (sourceMessageId:  string) => void;
 }> = ({
   task:   t,
   members,
@@ -349,6 +353,7 @@ const TaskCardMobile: React.  FC<{
   taskLogs,
   formatTime,
   truncateTitle,
+  onClickTitle,
 }) => {
   const [checklistOpen, setChecklistOpen] = React.useState(false);
 
@@ -362,7 +367,35 @@ const TaskCardMobile: React.  FC<{
     <div className="rounded-xl bg-white border border-gray-200 p-3 shadow-sm">
       {/* Title */}
       <div className="text-sm font-semibold text-gray-800 leading-snug mb-1">
-        {truncateTitle(t.title || t.description)}
+        <a
+          href={t.sourceMessageId ? `#msg-${t.sourceMessageId}` : undefined}
+          onClick={(e) => {
+            if (!t.sourceMessageId) {
+              e.preventDefault();
+              return;
+            }
+            e.preventDefault();
+            onClickTitle?.(t.sourceMessageId);
+          }}
+          className={`
+            block w-full text-left
+            text-sm font-semibold leading-snug
+            transition-colors duration-200
+            ${t.sourceMessageId
+                    ? `
+                text-gray-800 
+                active:text-brand-600 
+                active:underline
+                active:decoration-brand-500
+                cursor-pointer
+              `
+              : 'text-gray-400 no-underline'
+            }
+          `}
+          aria-disabled={!t.sourceMessageId}
+        >
+          {truncateTitle(t.title || t.description)}
+        </a>
       </div>
 
       {/* Meta */}

@@ -124,7 +124,7 @@ export const mockTasks: Task[] = [
   // =========================
   {
     id: "task_007",
-    title: "Nhận hàng lô PO-2025-003 (sáng)",
+    title: "Kiểm tra biên bản nhận hàng đợt 2",
     description: "Lô hàng nhập buổi sáng, đã kiểm đủ số lượng và tình trạng.",
     groupId: "grp_vh_kho",
     workTypeId: "wt_nhan_hang",
@@ -143,7 +143,7 @@ export const mockTasks: Task[] = [
   },
   {
     id: "task_008",
-    title: "Nhận hàng lô PO-2025-004 (chiều)",
+    title: "Cân hàng nhập cuối ngày",
     description: "Hàng nhập cuối ngày, đã xác nhận đủ chứng từ với NCC.",
     groupId: "grp_vh_kho",
     workTypeId: "wt_nhan_hang",
@@ -249,7 +249,7 @@ export const mockTasks: Task[] = [
   // 2. IN_PROGRESS task for leader
   {
     id: "task_leader_002",
-    title: "Đánh giá hiệu suất team tháng 11",
+    title: "Cần đánh giá KPI team tháng 11 và gửi báo cáo lên giám đốc.",
     description: "Tổng hợp KPI và đánh giá từng thành viên",
     groupId: "grp_vh_kho",
     workTypeId: "wt_nhan_hang",
@@ -269,7 +269,7 @@ export const mockTasks: Task[] = [
   // 3. DONE TODAY task for leader
   {
     id: "task_leader_003",
-    title: "Họp với NCC về chất lượng hàng hóa",
+    title: "Họp với NCC CP về vấn đề chất lượng hàng hóa buổi sáng nay.",
     description: "Cuộc họp buổi sáng với NCC CP về vấn đề đổi trả",
     groupId: "grp_vh_kho",
     workTypeId: "wt_nhan_hang",
@@ -289,7 +289,7 @@ export const mockTasks: Task[] = [
   // 4. DONE TODAY task #2 for leader
   {
     id: "task_leader_004",
-    title: "Kiểm tra báo cáo tồn kho tuần",
+    title: "Kiểm tra báo cáo tồn kho tuần và xác nhận với kế toán.",
     description: "Xác nhận số liệu tồn kho cuối tuần",
     groupId: "grp_vh_kho",
     workTypeId: "wt_nhan_hang",
