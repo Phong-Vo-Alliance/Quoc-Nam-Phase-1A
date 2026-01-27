@@ -41,6 +41,7 @@ import type { Phase1AFileItem } from '../components/FileManagerPhase1A';
 import { TabTaskMobile } from '../components/TabTaskMobile';
 import { DefaultChecklistMobile } from '../components/DefaultChecklistMobile';
 import { TaskBannerMobile } from '../components/TaskBannerMobile';
+import { TaskBannerDesktop } from '../components/TaskBannerDesktop';
 import { TabOwnTasksMobile } from '../components/TabOwnTasksMobile';
 import { TabReceivedInfoMobile } from '../components/TabReceivedInfoMobile';
 import { useHorizontalScroll } from '@/lib/hooks/useHorizontalScroll';
@@ -293,10 +294,10 @@ export const ChatMain: React.FC<{
     return receivedInfos?.filter(info => info.status === 'waiting').length ?? 0;
   }, [receivedInfos, viewMode, isMobile]);
 
-  // ✅ UPDATED: Task banner data for BOTH staff AND leader
+  // ✅ UPDATED: Task banner data for BOTH staff AND leader (mobile AND desktop)
   const myPendingTasks = React.useMemo(() => {
-    // Show for both staff and leader on mobile
-    if (!currentUserId || !isMobile) return [];
+    // Show for both staff and leader on mobile and desktop
+    if (!currentUserId) return [];
 
     return tasks
       .filter(t =>
@@ -307,7 +308,7 @@ export const ChatMain: React.FC<{
         // Sort by createdAt DESC (latest first)
         new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
       );
-  }, [tasks, currentUserId, isMobile]); // ✅ Removed viewMode dependency
+  }, [tasks, currentUserId]); // ✅ Works for both mobile and desktop
 
   // Latest task for banner display
   const latestTask = myPendingTasks[0];
@@ -324,9 +325,9 @@ export const ChatMain: React.FC<{
     const title = latestTask.title || latestTask.description || 'Việc mới';
 
     // Smart truncation based on screen width
-    const maxLength = 25; // Adjust based on testing
+    const maxLength = isMobile ? 25 : 60; // ✅ Desktop: 60 ký tự, Mobile: 25 ký tự
     return title.length > maxLength ? title.slice(0, maxLength) + '...' : title;
-  }, [latestTask]);
+  }, [latestTask, isMobile]);
 
   // Breakdown by work type
   const taskBreakdownByWorkType = React.useMemo(() => {
@@ -350,7 +351,14 @@ export const ChatMain: React.FC<{
         inProgressCount: counts.inProgress,
       };
     });
-  }, [myPendingTasks, workTypes]); // ✅ Updated dependency
+  }, [myPendingTasks, workTypes]); // ✅ Fixed: Added closing bracket and dependencies
+
+  // Helper to switch to a specific workType
+  const handleViewWorkType = React.useCallback((workTypeId: string) => {
+    onChangeWorkType?.(workTypeId);
+    setShowRight(true); // Open right panel to show tasks
+    setTab('tasks'); // ✅ Switch to tasks tab in RightPanel
+  }, [onChangeWorkType, setShowRight, setTab]);
 
   const composerRef = React.useRef<HTMLDivElement | null>(null);
   const [sheetBottom, setSheetBottom] = React.useState<number>(130);
@@ -754,6 +762,18 @@ export const ChatMain: React.FC<{
           </>
         )}
       </div>
+
+      {/* ✅ NEW: Task Banner for Desktop (Below WorkType Tabs) */}
+      {!isMobileLayout && (
+        <TaskBannerDesktop
+          visible={myPendingTasks.length > 0}
+          taskTitle={latestTaskTitle}
+          totalCount={myPendingTasks.length}
+          latestTaskWorkType={latestTaskWorkType}
+          allWorkTypeBreakdown={taskBreakdownByWorkType}
+          onViewWorkType={handleViewWorkType}
+        />
+      )}
 
       {/* ✅ UPDATED: Task Banner for Mobile (Both Staff & Leader) */}
       {isMobileLayout && (

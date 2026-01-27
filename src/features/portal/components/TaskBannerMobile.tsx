@@ -25,7 +25,7 @@ export const TaskBannerMobile: React.FC<TaskBannerMobileProps> = ({
   breakdown,
   onViewWorkType,
 }) => {
-  const [expanded, setExpanded] = React. useState(false);
+  const [expanded, setExpanded] = React.useState(false);
 
   // Auto-close when component unmounts or becomes invisible
   React.useEffect(() => {
@@ -33,6 +33,29 @@ export const TaskBannerMobile: React.FC<TaskBannerMobileProps> = ({
       setExpanded(false);
     }
   }, [visible]);
+
+  // ✅ Bell ring animation on mount and count change
+  const [shouldRing, setShouldRing] = React.useState(false);
+  const prevCountRef = React.useRef(totalCount);
+
+  React.useEffect(() => {
+    if (visible) {
+      // Ring on mount
+      setShouldRing(true);
+      const timer = setTimeout(() => setShouldRing(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  React.useEffect(() => {
+    // Ring when count increases
+    if (totalCount > prevCountRef.current && visible) {
+      setShouldRing(true);
+      const timer = setTimeout(() => setShouldRing(false), 800);
+      return () => clearTimeout(timer);
+    }
+    prevCountRef.current = totalCount;
+  }, [totalCount, visible]);
 
   if (!visible) return null;
 
@@ -52,7 +75,7 @@ export const TaskBannerMobile: React.FC<TaskBannerMobileProps> = ({
         aria-label="Xem chi tiết công việc"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Bell className="h-4 w-4 text-amber-600 shrink-0" />
+          <Bell className={`h-4 w-4 text-amber-600 shrink-0 ${shouldRing ? 'animate-bell-ring' : ''}`} />
           
           <span className="text-xs font-semibold text-gray-800 shrink-0">
             {workType}:
@@ -184,20 +207,37 @@ export const TaskBannerMobile: React.FC<TaskBannerMobileProps> = ({
           to { opacity: 1; }
         }
         @keyframes slide-down {
-          from { 
-            opacity: 0; 
-            transform: translateY(-8px); 
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
           }
-          to { 
-            opacity: 1; 
-            transform: translateY(0); 
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
+        }
+        @keyframes bell-ring {
+          0% { transform: rotate(0deg); }
+          10% { transform: rotate(15deg); }
+          20% { transform: rotate(-12deg); }
+          30% { transform: rotate(15deg); }
+          40% { transform: rotate(-12deg); }
+          50% { transform: rotate(10deg); }
+          60% { transform: rotate(-8deg); }
+          70% { transform: rotate(6deg); }
+          80% { transform: rotate(-4deg); }
+          90% { transform: rotate(2deg); }
+          100% { transform: rotate(0deg); }
         }
         . animate-fade-in {
           animation: fade-in 150ms ease-out;
         }
         .animate-slide-down {
           animation: slide-down 200ms ease-out;
+        }
+        .animate-bell-ring {
+          animation: bell-ring 800ms ease-in-out;
+          transform-origin: top center;
         }
       `}</style>
     </div>
